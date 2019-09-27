@@ -6,7 +6,7 @@ def create_index(documents):
     current_doc=1
     current_pos=1
     for line in documents:
-        if(line=='\n'):
+        if(line==''):
             current_doc += 1
             current_pos = 1
         else:
@@ -16,8 +16,7 @@ def create_index(documents):
                 else:
                     posting_list=Inverted_index[word]
                     if (posting_list[-1][0]!=current_doc):
-                       posting_list.append[current_doc,1,[current_pos]]
-                       Inverted_index[word]=posting_list
+                       posting_list+=[[current_doc,1,[current_pos]]]
                     else:
                        posting_list[-1][1]+=1
                        posting_list[-1][2] += [current_pos]
