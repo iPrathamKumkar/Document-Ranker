@@ -51,7 +51,7 @@ def docid(position):
         return PosInf
 
 
-def binarySearch_high(term, low, high, current):
+def binarysearch_high(term, low, high, current):
     while high - low > 1:
         mid = int((low + high) / 2)
         if posting_list[term][mid] <= current:
@@ -70,7 +70,7 @@ def next_pos(term, current):
     if posting_list[term][0] > current:
         cache[term] = 0
         return posting_list[term][cache[term]]
-    if cache[term] > 0 and posting_list[cache[term]-1] < current:
+    if cache[term] > 0 and posting_list[cache[term]-1] <= current:
         low = cache[term] - 1
     else:
         low = 0
@@ -82,7 +82,7 @@ def next_pos(term, current):
         high = low + jump
     if high > length_posting:
         high = length_posting
-    cache[term] = binarySearch_high(term, low, high, current)
+    cache[term] = binarysearch_high(term, low, high, current)
     return posting_list[term][cache[term]]
 
 
@@ -99,6 +99,32 @@ def binarysearch_low(term, low, high, current):
         else:
             low = mid
     return low
+
+
+def prev_pos(term, current):
+    cache = {}
+    cache[term] = len(posting_list[term])
+    length_posting = len(posting_list[term]) - 1
+    if len(posting_list[term]) == 0 or posting_list[term][0] >= current:
+        return NegInf
+    if posting_list[term][length_posting] < current:
+        cache[term] = length_posting
+        return posting_list[term][cache[term]]
+    if cache[term] < length_posting and posting_list[cache[term] + 1] >= current:
+        high = cache[term] + 1
+    else:
+        high = length_posting
+    jump = 1
+    low = high - jump
+    while low > 0 and posting_list[term][low] >= current:
+        high = low
+        jump *= 2
+        low = high - jump
+    if low < 0:
+        low = 0
+    cache[term] = binarysearch_low(term, low, high, current)
+    return posting_list[term][cache[term]]
+
 
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
@@ -118,4 +144,17 @@ posting_list = {}
 for term in inv_index.keys():
     posting_list[term] = inv_index[term][1]
 
-print(binarysearch_low('sir', 0, 4, 12))
+
+def assert_data (expected, actual):
+    if expected == actual:
+        print (str(actual))
+    else:
+        print("Fail")
+
+# prev_pos
+assert_data(prev_pos('you', 18), 16)
+assert_data(prev_pos('quarrel', 2), -2147483648)
+assert_data(prev_pos('sir', 30), 28)
+assert_data(prev_pos('if', 10), 9)
+assert_data(prev_pos('if', 30), 9)
+
