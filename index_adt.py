@@ -18,19 +18,20 @@ def polish_to_infix(query):
             stack.append('('+operand1+' '+term+' '+operand2+')')
     return stack[0]
 
-with open(sys.argv[1], 'r') as text:
-    input_string = text.read()
 
-input_string = input_string.translate(str.maketrans('', '', string.punctuation))
-
-input_string = input_string.lower()
-documents = input_string.split('\n\n')
-
-for i in range(len(documents)):
-    documents[i] = documents[i].replace('\n', ' ')
-
-polish_query = sys.argv[2]
-query = polish_to_infix(polish_query)
+def create_index(documents):
+    inverted_index={}
+    current_pos=1
+    for line in documents:
+        for word in line.split():
+            if word not in inverted_index:
+                inverted_index[word]=[1,[current_pos]]
+            else:
+                posting_list=inverted_index[word]
+                posting_list[0]+=1
+                posting_list[1] += [current_pos]
+            current_pos+=1
+    return inverted_index
 
 
 def docid(position):
@@ -46,6 +47,16 @@ def docid(position):
         else:
             prev_length = doc_length
             doc_num += 1
+
+
+def binarySearch(term, low, high, current):
+    while high - low > 1:
+        mid = int((low + high) / 2)
+        if posting_list[term][mid] <= current:
+            low = mid
+        else:
+            high = mid
+    return high
 
 
 def next_pos(term, current):
@@ -72,34 +83,20 @@ def next_pos(term, current):
     cache[term] = binarySearch(term, low, high, current)
     return posting_list[term][cache[term]]
 
+with open(sys.argv[1], 'r') as text:
+    input_string = text.read()
 
-def binarySearch(term, low, high, current):
-    while high - low > 1:
-        mid = int((low + high) / 2)
-        if posting_list[term][mid] <= current:
-            low = mid
-        else:
-            high = mid
-    return high
+input_string = input_string.translate(str.maketrans('', '', string.punctuation))
+input_string = input_string.lower()
+documents = input_string.split('\n\n')
+for i in range(len(documents)):
+    documents[i] = documents[i].replace('\n', ' ')
 
-def create_index(documents):
-    inverted_index={}
-    current_pos=1
-    for line in documents:
-        for word in line.split():
-            if word not in inverted_index:
-                inverted_index[word]=[1,[current_pos]]
-            else:
-                posting_list=inverted_index[word]
-                posting_list[0]+=1
-                posting_list[1] += [current_pos]
-            current_pos+=1
-    return inverted_index
+polish_query = sys.argv[2]
+query = polish_to_infix(polish_query)
 
 inv_index=create_index(documents)
-
 
 posting_list = {}
 for term in inv_index.keys():
     posting_list[term] = inv_index[term][1]
-
