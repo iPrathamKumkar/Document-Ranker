@@ -19,16 +19,18 @@ def create_index(documents):
     print(Inverted_index)
     return Inverted_index
 
-num_results = int(sys.argv[2])
-query = str(sys.argv[3])
-token_frequency=[]
-term_frquency=[]
+# num_results = int(sys.argv[2])
+# query = str(sys.argv[3])
+# token_frequency=[]
+# term_frquency=[]
 with open(sys.argv[1],'r') as f:
     collection=f.read()
 corpus=collection.translate(collection.maketrans('','',string.punctuation)).lower()
+print(corpus)
 documents=corpus.split('\n')
+print(documents)
 #print(documents)
 Inverted_index=create_index(documents)
 
-#print(Inverted_index)
+print(Inverted_index)
 

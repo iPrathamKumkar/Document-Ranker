@@ -1,6 +1,7 @@
 import sys
 import string
 
+PosInf = sys.maxsize
 
 def polish_to_infix(query):
 
@@ -27,11 +28,9 @@ documents = input_string.split('\n\n')
 
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
-print(documents)
 
 polish_query = sys.argv[2]
-q = polish_to_infix(polish_query)
-print(q)
+query = polish_to_infix(polish_query)
 
 
 def docid(position):
@@ -49,8 +48,58 @@ def docid(position):
             doc_num += 1
 
 
-print(docid(0))
+def next_pos(term, current):
+    cache = {}
+    cache[term] = -1
+    length_posting = len(posting_list[term]) - 1
+    if len(posting_list[term]) == 0 or posting_list[term][length_posting] <= current:
+        return PosInf
+    if posting_list[term][0] > current:
+        cache[term] = 0
+        return posting_list[term][cache[term]]
+    if cache[term] > 0 and posting_list[cache[term]-1] < current:
+        low = cache[term] - 1
+    else:
+        low = 0
+    jump = 1
+    high = low + jump
+    while high < length_posting and posting_list[term][high] <= current:
+        low = high
+        jump *= 2
+        high = low + jump
+    if high > length_posting:
+        high = length_posting
+    cache[term] = binarySearch(term, low, high, current)
+    return posting_list[term][cache[term]]
 
-posting_list = {'a': [21], 'sir': [4, 6, 8 ,12, 28]}
 
-def next_pos(term, position):
+def binarySearch(term, low, high, current):
+    while high - low > 1:
+        mid = int((low + high) / 2)
+        if posting_list[term][mid] <= current:
+            low = mid
+        else:
+            high = mid
+    return high
+
+def create_index(documents):
+    inverted_index={}
+    current_pos=1
+    for line in documents:
+        for word in line.split():
+            if word not in inverted_index:
+                inverted_index[word]=[1,[current_pos]]
+            else:
+                posting_list=inverted_index[word]
+                posting_list[0]+=1
+                posting_list[1] += [current_pos]
+            current_pos+=1
+    return inverted_index
+
+inv_index=create_index(documents)
+
+
+posting_list = {}
+for term in inv_index.keys():
+    posting_list[term] = inv_index[term][1]
+
