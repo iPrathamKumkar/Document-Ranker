@@ -2,6 +2,7 @@ import sys
 import string
 
 PosInf = sys.maxsize
+NegInf = -PosInf - 1
 
 def polish_to_infix(query):
 
@@ -36,7 +37,7 @@ def create_index(documents):
 
 def docid(position):
     if position == 0:
-        return None
+        return NegInf
     doc_num = 1
     prev_length = 0
     for doc in documents:
@@ -47,6 +48,7 @@ def docid(position):
         else:
             prev_length = doc_length
             doc_num += 1
+        return PosInf
 
 
 def binarySearch(term, low, high, current):
@@ -82,6 +84,12 @@ def next_pos(term, current):
         high = length_posting
     cache[term] = binarySearch(term, low, high, current)
     return posting_list[term][cache[term]]
+
+
+def next_doc(term, current):
+    pos = next_pos(term, current)
+    doc_num = docid(pos)
+    return (doc_num)
 
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
