@@ -138,6 +138,12 @@ def prev_pos(term, current):
     return posting_list[term][cache[term]]
 
 
+def prev_doc(term, current):
+    pos = prev_pos(term, current)
+    doc_num = docid(pos)
+    return (doc_num)
+
+
 def create_tree(expression):
     print(expression)
     current = expression[0]
@@ -152,6 +158,13 @@ def inorder(node):
         inorder(node.left)
         print(node.val)
         inorder(node.right)
+
+
+def assert_data (actual, expected):
+    if expected == actual:
+        print (str(actual))
+    else:
+        print("Fail - got ", str(actual))
 
 
 with open(sys.argv[1], 'r') as text:
@@ -173,12 +186,6 @@ for term in inv_index.keys():
     posting_list[term] = inv_index[term][1]
 
 
-def assert_data (actual, expected):
-    if expected == actual:
-        print (str(actual))
-    else:
-        print("Fail - got ", str(actual))
-
 # prev_pos
 assert_data(prev_pos('you', 18), 16)
 assert_data(prev_pos('quarrel', 2), -2147483648)
@@ -186,10 +193,7 @@ assert_data(prev_pos('sir', 30), 28)
 assert_data(prev_pos('if', 10), 9)
 assert_data(prev_pos('if', 30), 9)
 
-def prev_doc(term, current):
-    pos = prev_pos(term, current)
-    doc_num = docid(pos)
-    return (doc_num)
+
 
 #prev_doc
 assert_data(prev_doc('you',18), 3)
