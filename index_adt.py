@@ -51,7 +51,7 @@ def docid(position):
         return PosInf
 
 
-def binarySearch(term, low, high, current):
+def binarySearch_high(term, low, high, current):
     while high - low > 1:
         mid = int((low + high) / 2)
         if posting_list[term][mid] <= current:
@@ -82,7 +82,7 @@ def next_pos(term, current):
         high = low + jump
     if high > length_posting:
         high = length_posting
-    cache[term] = binarySearch(term, low, high, current)
+    cache[term] = binarySearch_high(term, low, high, current)
     return posting_list[term][cache[term]]
 
 
@@ -90,6 +90,15 @@ def next_doc(term, current):
     pos = next_pos(term, current)
     doc_num = docid(pos)
     return (doc_num)
+
+def binarysearch_low(term, low, high, current):
+    while high - low > 1:
+        mid = int((low + high) / 2)
+        if posting_list[term][mid] >= current:
+            high = mid
+        else:
+            low = mid
+    return low
 
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
@@ -108,3 +117,5 @@ inv_index=create_index(documents)
 posting_list = {}
 for term in inv_index.keys():
     posting_list[term] = inv_index[term][1]
+
+print(binarysearch_low('sir', 0, 4, 12))
