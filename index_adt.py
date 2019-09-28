@@ -48,7 +48,7 @@ def docid(position):
         else:
             prev_length = doc_length
             doc_num += 1
-        return PosInf
+    return PosInf
 
 
 def binarysearch_high(term, low, high, current):
@@ -145,11 +145,11 @@ for term in inv_index.keys():
     posting_list[term] = inv_index[term][1]
 
 
-def assert_data (expected, actual):
+def assert_data (actual, expected):
     if expected == actual:
         print (str(actual))
     else:
-        print("Fail")
+        print("Fail - got ", str(actual))
 
 # prev_pos
 assert_data(prev_pos('you', 18), 16)
@@ -158,3 +158,10 @@ assert_data(prev_pos('sir', 30), 28)
 assert_data(prev_pos('if', 10), 9)
 assert_data(prev_pos('if', 30), 9)
 
+def prev_doc(term, current):
+    pos = prev_pos(term, current)
+    doc_num = docid(pos)
+    return (doc_num)
+
+#prev_doc
+assert_data(prev_doc('you',18), 3)
