@@ -4,20 +4,32 @@ import string
 PosInf = sys.maxsize
 NegInf = -PosInf - 1
 
-def polish_to_infix(query):
 
-    stack = []
-    AND='_AND'
-    OR= '_OR'
-    boolean_operators=[AND,OR]
-    for term in reversed(query.split()):
-        if term not in boolean_operators:
-            stack.append(term)
-        else:
-            operand1 = stack.pop()
-            operand2= stack.pop()
-            stack.append('('+operand1+' '+term+' '+operand2+')')
-    return stack[0]
+class Tree:
+    def __init__(self, left, val, right):
+        self.val = val
+        self.left = left
+        self.right = right
+
+
+AND='_AND'
+OR= '_OR'
+
+
+# def polish_to_infix(query):
+#
+#     stack = []
+#     AND='_AND'
+#     OR= '_OR'
+#     boolean_operators=[AND,OR]
+#     for term in reversed(query.split()):
+#         if term not in boolean_operators:
+#             stack.append(term)
+#         else:
+#             operand1 = stack.pop()
+#             operand2= stack.pop()
+#             stack.append('('+operand1+' '+term+' '+operand2+')')
+#     return stack[0]
 
 
 def create_index(documents):
@@ -126,6 +138,22 @@ def prev_pos(term, current):
     return posting_list[term][cache[term]]
 
 
+def create_tree(expression):
+    print(expression)
+    current = expression[0]
+    expression.remove(current)
+    if current not in [AND, OR]:
+        return Tree(None, current, None)
+    else:
+        return Tree(create_tree(expression), current, create_tree(expression))
+
+def inorder(node):
+    if node is not None:
+        inorder(node.left)
+        print(node.val)
+        inorder(node.right)
+
+
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
 
@@ -135,8 +163,8 @@ documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
 
-polish_query = sys.argv[2]
-query = polish_to_infix(polish_query)
+query = sys.argv[2].split()
+# query = polish_to_infix(polish_query)
 
 inv_index=create_index(documents)
 
@@ -165,3 +193,5 @@ def prev_doc(term, current):
 
 #prev_doc
 assert_data(prev_doc('you',18), 3)
+
+inorder(create_tree(query))
