@@ -138,7 +138,7 @@ def prev_pos(term, current):
 
 
 def prev_doc(term, current_doc):
-    search_index = doc_first_last[current_doc][1]
+    search_index = doc_first_last[current_doc][0]
     pos = prev_pos(term, search_index)
     doc_num = docid(pos)
     return (doc_num)
@@ -204,6 +204,3 @@ query = sys.argv[2]
 posting_list = create_posting(documents)
 doc_f_l(documents)
 
-assert_data(doc_right(create_tree('_AND _AND you do _AND serve good'), 3), 3)
-
-print(doc_first_last)
