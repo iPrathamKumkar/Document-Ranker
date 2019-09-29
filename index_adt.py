@@ -254,8 +254,12 @@ def compute_doc_vector():
             tf = get_tf(doc_id, term)
             idf = get_idf(doc_id, term)
             tmp_list.append(tf*idf)
-        doc_vector[doc_id] = tmp_list
+        doc_vector[doc_id] = normalize(tmp_list)
     return doc_vector
+
+def normalize(vector):
+    length = math.sqrt(sum(map(lambda x: x * x, vector)))
+    return list(map(lambda x : x / length, vector))
 
 
 with open(sys.argv[1], 'r') as text:
