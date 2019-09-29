@@ -18,6 +18,7 @@ OR= '_OR'
 posting_list = {}
 doc_first_last = {}
 
+
 def create_posting(documents):
     current_pos = 1
     for line in documents:
@@ -97,6 +98,7 @@ def next_doc(term, current_doc):
     doc_num = docid(pos)
     return (doc_num)
 
+
 def binarysearch_low(term, low, high, current):
     while high - low > 1:
         mid = int((low + high) / 2)
@@ -153,6 +155,7 @@ def create_tree_helper(expression):
     else:
         return Tree(create_tree_helper(expression), current, create_tree_helper(expression))
 
+
 def inorder(node):
     if node is not None:
         inorder(node.left)
@@ -195,41 +198,6 @@ for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
 
 query = sys.argv[2]
-# query = polish_to_infix(polish_query)
-
-inv_index = create_posting(documents)
-print(inv_index)
-# for term in inv_index.keys():
-#     posting_list[term] = inv_index[term][1]
-print(documents)
 posting_list = create_posting(documents)
 doc_f_l(documents)
-# prev_pos
-# assert_data(prev_pos('you', 18), 16)
-# assert_data(prev_pos('quarrel', 2), -2147483648)
-# assert_data(prev_pos('sir', 30), 28)
-# assert_data(prev_pos('if', 10), 9)
-# assert_data(prev_pos('if', 30), 9)
 
-
-# next_doc
-assert_data(next_doc('sir', 1), 2)
-assert_data(next_doc('quarrel', 1), 2)
-assert_data(next_doc('you', 1), 3)
-
-
-#prev_doc
-# assert_data(prev_doc('you',18), 3)
-assert_data(prev_doc('sir', 4), 3)
-assert_data(prev_doc('quarrel', 4), 2)
-assert_data(prev_doc('you', 4), 3)
-
-
-# inorder(create_tree(query))
-
-# x = doc_left(create_tree('_AND _OR quarrel sir you'), 4)
-# print(x)
-
-# print(prev_doc('sir', 12))
-
-print(doc_first_last)
