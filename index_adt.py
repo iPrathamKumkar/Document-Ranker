@@ -21,12 +21,26 @@ doc_first_last = {}
 valid_docs = []
 
 
-# def create_index(documents):
-#     current_doc = 1
-#     current_count = 1
-#     for doc in documents:
-#         for word in doc.split:
-
+def create_index(documents):
+    current_doc = 1
+    total_count = {}
+    for doc in documents:
+        appeared = []
+        for word in doc.split():
+            if word not in inverted_index:
+                inverted_index[word] = [[current_doc, 1]]
+                appeared.append(word)
+                total_count[word] = 1
+            elif word not in appeared:
+                inverted_index[word].append([current_doc, 1])
+                appeared.append(word)
+                total_count[word] += 1
+            else:
+                inverted_index[word][-1][1] += 1
+                total_count[word] += 1
+        current_doc += 1
+    for word in total_count.keys():
+        inverted_index[word].append(total_count[word])
 
 def create_posting(documents):
     current_pos = 1
@@ -230,10 +244,14 @@ input_string = input_string.lower()
 documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
+print(documents)
 query = sys.argv[2]
+create_index(documents)
 posting_list = create_posting(documents)
 print(posting_list)
 doc_f_l(documents)
 
 candidate_solutions(query)
 print(valid_docs)
+
+print(inverted_index)
