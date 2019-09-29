@@ -15,20 +15,20 @@ class Tree:
 AND='_AND'
 OR= '_OR'
 
+posting_list = {}
+doc_first_last = {}
 
-def create_index(documents):
-    inverted_index={}
-    current_pos=1
+def create_posting(documents):
+    current_pos = 1
     for line in documents:
         for word in line.split():
-            if word not in inverted_index:
-                inverted_index[word]=[1,[current_pos]]
+            if word not in posting_list:
+                posting_list[word] = [current_pos]
             else:
-                posting_list=inverted_index[word]
-                posting_list[0]+=1
-                posting_list[1] += [current_pos]
-            current_pos+=1
-    return inverted_index
+                x = posting_list[word]
+                x += [current_pos]
+            current_pos += 1
+    return posting_list
 
 
 def docid(position):
@@ -45,6 +45,15 @@ def docid(position):
             prev_length = doc_length
             doc_num += 1
     return None
+
+
+def doc_f_l(documents):
+    prev_length = 0
+    for i in range(1, len(documents) + 1):
+        words = documents[i-1].split()
+        doc_length = prev_length + len(words)
+        doc_first_last[i] = (prev_length + 1, doc_length)
+        prev_length = doc_length
 
 
 def binarysearch_high(term, low, high, current):
@@ -187,13 +196,12 @@ for i in range(len(documents)):
 query = sys.argv[2]
 # query = polish_to_infix(polish_query)
 
-inv_index=create_index(documents)
-
-posting_list = {}
-for term in inv_index.keys():
-    posting_list[term] = inv_index[term][1]
-
-
+inv_index = create_posting(documents)
+print(inv_index)
+# for term in inv_index.keys():
+#     posting_list[term] = inv_index[term][1]
+print(documents)
+posting_list = create_posting(documents)
 # prev_pos
 # assert_data(prev_pos('you', 18), 16)
 # assert_data(prev_pos('quarrel', 2), -2147483648)
@@ -210,3 +218,6 @@ for term in inv_index.keys():
 # print(x)
 
 # print(prev_doc('sir', 12))
+doc_f_l(documents)
+print(doc_first_last)
+
