@@ -48,8 +48,8 @@ def create_index(documents):
 
 
 def docid(position):
-    if position == 0:
-        return NegInf
+    if position == NegInf:
+        return None
     doc_num = 1
     prev_length = 0
     for doc in documents:
@@ -60,7 +60,7 @@ def docid(position):
         else:
             prev_length = doc_length
             doc_num += 1
-    return PosInf
+    return None
 
 
 def binarysearch_high(term, low, high, current):
@@ -98,8 +98,9 @@ def next_pos(term, current):
     return posting_list[term][cache[term]]
 
 
-def next_doc(term, current):
-    pos = next_pos(term, current)
+def next_doc(term, current_doc):
+
+    pos = next_pos(term, current_doc)
     doc_num = docid(pos)
     return (doc_num)
 
@@ -145,13 +146,18 @@ def prev_doc(term, current):
 
 
 def create_tree(expression):
+    list_exp = expression.split(' ')
+    return create_tree_helper(list_exp)
+
+
+def create_tree_helper(expression):
     print(expression)
     current = expression[0]
     expression.remove(current)
     if current not in [AND, OR]:
         return Tree(None, current, None)
     else:
-        return Tree(create_tree(expression), current, create_tree(expression))
+        return Tree(create_tree_helper(expression), current, create_tree_helper(expression))
 
 def inorder(node):
     if node is not None:
@@ -167,6 +173,24 @@ def assert_data (actual, expected):
         print("Fail - got ", str(actual))
 
 
+def doc_right(node, position):
+    if node.left is None and node.right is None:
+        return next_doc(node.val, position)
+    elif node.val is AND:
+        return max((doc_right(node.left), position), doc_right(node.right, position))
+    elif node.val is OR:
+        return min((doc_right(node.left), position), doc_right(node.right, position))
+
+
+def doc_left(node, position):
+    if node.left is None and node.right is None:
+        return prev_doc(node.val, position)
+    elif node.val is AND:
+        return min((doc_left(node.left), position), doc_left(node.right, position))
+    elif node.val is OR:
+        return max((doc_left(node.left), position), doc_left(node.right, position))
+
+
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
 
@@ -176,7 +200,7 @@ documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
 
-query = sys.argv[2].split()
+query = sys.argv[2]
 # query = polish_to_infix(polish_query)
 
 inv_index=create_index(documents)
@@ -187,15 +211,20 @@ for term in inv_index.keys():
 
 
 # prev_pos
-assert_data(prev_pos('you', 18), 16)
-assert_data(prev_pos('quarrel', 2), -2147483648)
-assert_data(prev_pos('sir', 30), 28)
-assert_data(prev_pos('if', 10), 9)
-assert_data(prev_pos('if', 30), 9)
+# assert_data(prev_pos('you', 18), 16)
+# assert_data(prev_pos('quarrel', 2), -2147483648)
+# assert_data(prev_pos('sir', 30), 28)
+# assert_data(prev_pos('if', 10), 9)
+# assert_data(prev_pos('if', 30), 9)
 
-
+assert_data(next_doc('quarrel', 1), 2)
 
 #prev_doc
-assert_data(prev_doc('you',18), 3)
+# assert_data(prev_doc('you',18), 3)
 
-inorder(create_tree(query))
+# inorder(create_tree(query))
+
+# x = doc_left(create_tree('_AND _OR quarrel sir you'), 4)
+# print(x)
+
+# print(prev_doc('sir', 12))
