@@ -16,22 +16,6 @@ AND='_AND'
 OR= '_OR'
 
 
-# def polish_to_infix(query):
-#
-#     stack = []
-#     AND='_AND'
-#     OR= '_OR'
-#     boolean_operators=[AND,OR]
-#     for term in reversed(query.split()):
-#         if term not in boolean_operators:
-#             stack.append(term)
-#         else:
-#             operand1 = stack.pop()
-#             operand2= stack.pop()
-#             stack.append('('+operand1+' '+term+' '+operand2+')')
-#     return stack[0]
-
-
 def create_index(documents):
     inverted_index={}
     current_pos=1
@@ -216,8 +200,6 @@ for term in inv_index.keys():
 # assert_data(prev_pos('sir', 30), 28)
 # assert_data(prev_pos('if', 10), 9)
 # assert_data(prev_pos('if', 30), 9)
-
-assert_data(next_doc('quarrel', 1), 2)
 
 #prev_doc
 # assert_data(prev_doc('you',18), 3)
