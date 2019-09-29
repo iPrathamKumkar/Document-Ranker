@@ -21,6 +21,7 @@ posting_list = {}
 doc_first_last = {}
 valid_docs = []
 doc_vector = {}
+query_vector = []
 
 
 def create_index(documents):
@@ -249,7 +250,7 @@ def get_idf(doc_id, term):
 
 def compute_doc_vector():
     for doc_id in valid_docs:
-        tmp_list=[]
+        tmp_list = []
         for term in sorted(inverted_index.keys()):
             tf = get_tf(doc_id, term)
             idf = get_idf(doc_id, term)
@@ -257,9 +258,20 @@ def compute_doc_vector():
         doc_vector[doc_id] = normalize(tmp_list)
     return doc_vector
 
+
 def normalize(vector):
     length = math.sqrt(sum(map(lambda x: x * x, vector)))
     return list(map(lambda x : x / length, vector))
+
+
+def compute_query_vector():
+    query_terms = query.translate(query.maketrans('', '', '_ANDOR')).split()
+    for term in sorted(inverted_index.keys()):
+        if term in query_terms:
+            query_vector.append(float(math.log(1 + query_terms.count(term), 2)))
+        else:
+            query_vector.append(float(0))
+    return normalize(query_vector)
 
 
 with open(sys.argv[1], 'r') as text:
@@ -280,6 +292,7 @@ candidate_solutions(query)
 print(sorted(inverted_index.keys()))
 
 print(inverted_index)
-
-valid_docs = [1,2,3,4,5]
+valid_docs = [1, 2, 3, 4, 5]
 print(compute_doc_vector())
+print(compute_query_vector())
+
