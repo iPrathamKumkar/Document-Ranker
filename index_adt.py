@@ -92,8 +92,8 @@ def next_pos(term, current):
 
 
 def next_doc(term, current_doc):
-
-    pos = next_pos(term, current_doc)
+    search_index = doc_first_last[current_doc][1]
+    pos = next_pos(term, search_index)
     doc_num = docid(pos)
     return (doc_num)
 
@@ -132,8 +132,9 @@ def prev_pos(term, current):
     return posting_list[term][cache[term]]
 
 
-def prev_doc(term, current):
-    pos = prev_pos(term, current)
+def prev_doc(term, current_doc):
+    search_index = doc_first_last[current_doc][1]
+    pos = prev_pos(term, search_index)
     doc_num = docid(pos)
     return (doc_num)
 
@@ -202,6 +203,7 @@ print(inv_index)
 #     posting_list[term] = inv_index[term][1]
 print(documents)
 posting_list = create_posting(documents)
+doc_f_l(documents)
 # prev_pos
 # assert_data(prev_pos('you', 18), 16)
 # assert_data(prev_pos('quarrel', 2), -2147483648)
@@ -209,8 +211,19 @@ posting_list = create_posting(documents)
 # assert_data(prev_pos('if', 10), 9)
 # assert_data(prev_pos('if', 30), 9)
 
+
+# next_doc
+assert_data(next_doc('sir', 1), 2)
+assert_data(next_doc('quarrel', 1), 2)
+assert_data(next_doc('you', 1), 3)
+
+
 #prev_doc
 # assert_data(prev_doc('you',18), 3)
+assert_data(prev_doc('sir', 4), 3)
+assert_data(prev_doc('quarrel', 4), 2)
+assert_data(prev_doc('you', 4), 3)
+
 
 # inorder(create_tree(query))
 
@@ -218,6 +231,5 @@ posting_list = create_posting(documents)
 # print(x)
 
 # print(prev_doc('sir', 12))
-doc_f_l(documents)
-print(doc_first_last)
 
+print(doc_first_last)
