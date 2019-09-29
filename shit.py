@@ -2,19 +2,19 @@ import sys
 import string
 
 def create_index(documents):
-    Inverted_index={}
-    current_doc=1
-    current_pos=1
+    inverted_index = {}
+    current_doc = 1
+    current_pos = 1
     for line in documents:
         if(line==''):
             current_doc += 1
             current_pos = 1
         else:
             for word in line.split():
-                if word not in Inverted_index:
-                    Inverted_index[word]=[[current_doc,1,[current_pos]]]
+                if word not in inverted_index:
+                    inverted_index[word]=[[current_doc,1,[current_pos]]]
                 else:
-                    posting_list=Inverted_index[word]
+                    posting_list=inverted_index[word]
                     if (posting_list[-1][0]!=current_doc):
                        posting_list+=[[current_doc,1,[current_pos]]]
                     else:
@@ -22,11 +22,11 @@ def create_index(documents):
                        posting_list[-1][2] += [current_pos]
                 current_pos+=1
     number_of_docs=current_doc
-    print(Inverted_index)
-    return Inverted_index
+    print(inverted_index)
+    return inverted_index
 
-num_results = int(sys.argv[2])
-query = str(sys.argv[3])
+# num_results = int(sys.argv[2])
+# query = str(sys.argv[3])
 token_frequency=[]
 term_frquency=[]
 with open(sys.argv[1],'r') as f:

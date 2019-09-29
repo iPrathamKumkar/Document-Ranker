@@ -15,15 +15,23 @@ class Tree:
 AND='_AND'
 OR= '_OR'
 
+inverted_index = {}
 posting_list = {}
 doc_first_last = {}
 valid_docs = []
 
 
+# def create_index(documents):
+#     current_doc = 1
+#     current_count = 1
+#     for doc in documents:
+#         for word in doc.split:
+
+
 def create_posting(documents):
     current_pos = 1
-    for line in documents:
-        for word in line.split():
+    for doc in documents:
+        for word in doc.split():
             if word not in posting_list:
                 posting_list[word] = [current_pos]
             else:
@@ -60,6 +68,7 @@ def doc_f_l(documents):
         prev_length = doc_length
     doc_first_last[NegInf] = (NegInf, 0)
     doc_first_last[PosInf] = (doc_first_last[len(documents)][1] + 1, PosInf)
+
 
 def binarysearch_high(term, low, high, current):
     while high - low > 1:
@@ -139,6 +148,8 @@ def prev_pos(term, current):
 
 
 def prev_doc(term, current_doc):
+    if current_doc not in doc_first_last.keys():
+        current_doc = PosInf
     search_index = doc_first_last[current_doc][0]
     pos = prev_pos(term, search_index)
     doc_num = docid(pos)
@@ -219,9 +230,10 @@ input_string = input_string.lower()
 documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
-
 query = sys.argv[2]
 posting_list = create_posting(documents)
+print(posting_list)
 doc_f_l(documents)
 
 candidate_solutions(query)
+print(valid_docs)
