@@ -34,7 +34,9 @@ def create_posting(documents):
 
 def docid(position):
     if position == NegInf:
-        return None
+        return NegInf
+    if position == PosInf:
+        return PosInf
     doc_num = 1
     prev_length = 0
     for doc in documents:
@@ -55,7 +57,8 @@ def doc_f_l(documents):
         doc_length = prev_length + len(words)
         doc_first_last[i] = (prev_length + 1, doc_length)
         prev_length = doc_length
-
+    doc_first_last[NegInf] = (NegInf, 0)
+    doc_first_last[PosInf] = (doc_first_last[len(documents)][1] + 1, PosInf)
 
 def binarysearch_high(term, low, high, current):
     while high - low > 1:
@@ -147,7 +150,6 @@ def create_tree(expression):
 
 
 def create_tree_helper(expression):
-    print(expression)
     current = expression[0]
     expression.remove(current)
     if current not in [AND, OR]:
@@ -173,19 +175,19 @@ def assert_data (actual, expected):
 def doc_right(node, position):
     if node.left is None and node.right is None:
         return next_doc(node.val, position)
-    elif node.val is AND:
-        return max((doc_right(node.left), position), doc_right(node.right, position))
-    elif node.val is OR:
-        return min((doc_right(node.left), position), doc_right(node.right, position))
+    elif node.val == AND:
+        return max(doc_right(node.left, position), doc_right(node.right, position))
+    elif node.val == OR:
+        return min(doc_right(node.left, position), doc_right(node.right, position))
 
 
 def doc_left(node, position):
     if node.left is None and node.right is None:
         return prev_doc(node.val, position)
-    elif node.val is AND:
-        return min((doc_left(node.left), position), doc_left(node.right, position))
-    elif node.val is OR:
-        return max((doc_left(node.left), position), doc_left(node.right, position))
+    elif node.val == AND:
+        return min(doc_left(node.left, position), doc_left(node.right, position))
+    elif node.val == OR:
+        return max(doc_left(node.left, position), doc_left(node.right, position))
 
 
 with open(sys.argv[1], 'r') as text:
@@ -197,7 +199,11 @@ documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
 
+print(documents)
 query = sys.argv[2]
 posting_list = create_posting(documents)
 doc_f_l(documents)
 
+assert_data(doc_right(create_tree('_AND _AND you do _AND serve good'), 3), 3)
+
+print(doc_first_last)
