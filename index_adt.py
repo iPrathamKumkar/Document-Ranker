@@ -17,6 +17,7 @@ OR= '_OR'
 
 posting_list = {}
 doc_first_last = {}
+valid_docs = []
 
 
 def create_posting(documents):
@@ -190,6 +191,26 @@ def doc_left(node, position):
         return max(doc_left(node.left, position), doc_left(node.right, position))
 
 
+def next_solution(query_tree, position):
+    v = doc_right(query_tree, position)
+    if v == PosInf:
+        return PosInf
+    u = doc_left(query_tree, v+1)
+    if u == v:
+        return u
+    else:
+        return next_solution(query_tree, v)
+
+
+def candidate_solutions(query_string):
+    query_tree = create_tree(query_string)
+    u = NegInf
+    while u < PosInf:
+        u = next_solution(query_tree, u)
+        if u < PosInf:
+            valid_docs.append(u)
+
+
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
 
@@ -199,8 +220,8 @@ documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
 
-print(documents)
 query = sys.argv[2]
 posting_list = create_posting(documents)
 doc_f_l(documents)
 
+candidate_solutions(query)
