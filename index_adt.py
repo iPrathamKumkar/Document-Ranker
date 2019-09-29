@@ -1,5 +1,6 @@
 import sys
 import string
+import math
 
 PosInf = sys.maxsize
 NegInf = -PosInf - 1
@@ -19,6 +20,7 @@ inverted_index = {}
 posting_list = {}
 doc_first_last = {}
 valid_docs = []
+doc_vector = {}
 
 
 def create_index(documents):
@@ -37,7 +39,6 @@ def create_index(documents):
                 total_count[word] += 1
             else:
                 inverted_index[word][-1][1] += 1
-                total_count[word] += 1
         current_doc += 1
     for word in total_count.keys():
         inverted_index[word].append(total_count[word])
@@ -236,6 +237,27 @@ def candidate_solutions(query_string):
             valid_docs.append(u)
 
 
+def get_tf(doc_id, term):
+    for pair in inverted_index[term][:-1]:
+        if pair[0] == doc_id:
+            return float(1 + math.log(pair[1], 2))
+    return 0.0
+
+def get_idf(doc_id, term):
+    return float(math.log(len(valid_docs)/inverted_index[term][-1], 2))
+
+
+def compute_doc_vector():
+    for doc_id in valid_docs:
+        tmp_list=[]
+        for term in sorted(inverted_index.keys()):
+            tf = get_tf(doc_id, term)
+            idf = get_idf(doc_id, term)
+            tmp_list.append(tf*idf)
+        doc_vector[doc_id] = tmp_list
+    return doc_vector
+
+
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
 
@@ -244,14 +266,16 @@ input_string = input_string.lower()
 documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
-print(documents)
 query = sys.argv[2]
 create_index(documents)
 posting_list = create_posting(documents)
-print(posting_list)
 doc_f_l(documents)
 
 candidate_solutions(query)
-print(valid_docs)
+
+print(sorted(inverted_index.keys()))
 
 print(inverted_index)
+
+valid_docs = [1,2,3,4,5]
+print(compute_doc_vector())
