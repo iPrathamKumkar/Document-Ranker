@@ -257,6 +257,7 @@ def compute_doc_vector():
             idf = get_idf(term)
             tmp_list.append(tf*idf)
         doc_vector[doc_id] = normalize(tmp_list)
+    print(doc_vector)
     return doc_vector
 
 
@@ -270,12 +271,14 @@ def compute_query_vector():
     query_terms = query.translate(query.maketrans('', '', '_ANDOR')).split()
     for term in sorted(inverted_index.keys()):
         if term in query_terms:
-            tf = float(math.log(1 + query_terms.count(term), 2))
+            tf = float(1 + math.log(query_terms.count(term), 2))
             idf = get_idf(term)
             query_vector.append(tf*idf)
         else:
             query_vector.append(float(0))
-    return normalize(query_vector)
+    norm_query_vector = normalize(query_vector)
+    print(norm_query_vector)
+    return normalize(norm_query_vector)
 
 
 def dot_product(doc_vector, query_vector):
@@ -305,23 +308,44 @@ def rank_cosine(k):
     while d < PosInf:
         result[d] = dot_product(norm_doc_vector[d], norm_query_vector)
         d = min_next_doc(d)
-    print(result)
+    results = sorted(result.items(), key=lambda x: x[1], reverse=True)
+    print('DocID\tScore\n')
+    for i in range(k):
+        if i < len(results):
+            print(str(results[i][0])+'\t\t'+str(results[i][1]))
+        else:
+            print("\nThe total number of documents is " + str(len(results)) + " which is less than the given value of k: " + str(k))
+            break
 
-
+# Reading the corpus file specified command line
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
 
+# Removing punctuations
 input_string = input_string.translate(str.maketrans('', '', string.punctuation))
+
+# Converting to lowercase
 input_string = input_string.lower()
+
+# Splitting the corpus into documents and separating the terms
 documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
+
+# Reading the positive query from command line
 query = sys.argv[3]
+
+# Creating an inverted index
 create_index(documents)
+
+# Creating posting lists for the terms
 posting_list = create_posting(documents)
+
+# Storing the starting and ending indices of each document
 doc_f_l(documents)
 
+# Generating a set of documents satisfying the given query
 candidate_solutions(query)
-valid_docs = [1,2,3,4,5]
-print(valid_docs)
-rank_cosine(1)
+
+# Returning the top k solutions
+rank_cosine(5)
