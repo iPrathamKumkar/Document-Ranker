@@ -20,8 +20,7 @@ inverted_index = {}
 posting_list = {}
 doc_first_last = {}
 valid_docs = []
-doc_vector = {}
-query_vector = []
+result = {}
 
 
 def create_index(documents):
@@ -244,16 +243,18 @@ def get_tf(doc_id, term):
             return float(1 + math.log(pair[1], 2))
     return 0.0
 
-def get_idf(doc_id, term):
+
+def get_idf(term):
     return float(math.log(len(valid_docs)/inverted_index[term][-1], 2))
 
 
 def compute_doc_vector():
+    doc_vector = {}
     for doc_id in valid_docs:
         tmp_list = []
         for term in sorted(inverted_index.keys()):
             tf = get_tf(doc_id, term)
-            idf = get_idf(doc_id, term)
+            idf = get_idf(term)
             tmp_list.append(tf*idf)
         doc_vector[doc_id] = normalize(tmp_list)
     return doc_vector
@@ -265,13 +266,46 @@ def normalize(vector):
 
 
 def compute_query_vector():
+    query_vector = []
     query_terms = query.translate(query.maketrans('', '', '_ANDOR')).split()
     for term in sorted(inverted_index.keys()):
         if term in query_terms:
-            query_vector.append(float(math.log(1 + query_terms.count(term), 2)))
+            tf = float(math.log(1 + query_terms.count(term), 2))
+            idf = get_idf(term)
+            query_vector.append(tf*idf)
         else:
             query_vector.append(float(0))
     return normalize(query_vector)
+
+
+def dot_product(doc_vector, query_vector):
+    return sum(map(lambda x, y: x * y, doc_vector, query_vector))
+
+
+def min_next_doc(doc_num):
+    query_terms = query.translate(query.maketrans('', '', '_ANDOR')).split()
+    tmp_docs = []
+    for term in query_terms:
+        tmp_docs.append(next_doc(term, doc_num))
+
+    check_valid = sorted(tmp_docs)
+    for d in sorted(tmp_docs):
+        if d in valid_docs:
+            return d
+        elif d not in valid_docs:
+            check_valid.remove(d)
+            if len(check_valid) == 0:
+                return PosInf
+
+
+def rank_cosine(k):
+    norm_doc_vector = compute_doc_vector()
+    norm_query_vector = compute_query_vector()
+    d = min_next_doc(NegInf)
+    while d < PosInf:
+        result[d] = dot_product(norm_doc_vector[d], norm_query_vector)
+        d = min_next_doc(d)
+    print(result)
 
 
 with open(sys.argv[1], 'r') as text:
@@ -282,17 +316,12 @@ input_string = input_string.lower()
 documents = input_string.split('\n\n')
 for i in range(len(documents)):
     documents[i] = documents[i].replace('\n', ' ')
-query = sys.argv[2]
+query = sys.argv[3]
 create_index(documents)
 posting_list = create_posting(documents)
 doc_f_l(documents)
 
 candidate_solutions(query)
-
-print(sorted(inverted_index.keys()))
-
-print(inverted_index)
-valid_docs = [1, 2, 3, 4, 5]
-print(compute_doc_vector())
-print(compute_query_vector())
-
+valid_docs = [1,2,3,4,5]
+print(valid_docs)
+rank_cosine(1)
