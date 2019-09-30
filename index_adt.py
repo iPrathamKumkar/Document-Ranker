@@ -28,37 +28,43 @@ result = {}
 
 
 # Defining an expression tree class to represent the positive boolean query
-class Tree:
+class ExpressionTree:
     def __init__(self, left, val, right):
         self.val = val
         self.left = left
         self.right = right
 
 
-# Creating inverted index
-def create_index(documents):
+# Creates inverted index based on the corpus
+def create_index():
     current_doc = 1
     total_count = {}
     for doc in documents:
         appeared = []
+        # Storing doc_id, doc_count for each term
         for word in doc.split():
+            # First occurrence of the term
             if word not in inverted_index:
                 inverted_index[word] = [[current_doc, 1]]
                 appeared.append(word)
                 total_count[word] = 1
+            # First occurrence in a particular document
             elif word not in appeared:
                 inverted_index[word].append([current_doc, 1])
                 appeared.append(word)
                 total_count[word] += 1
+            # If word has already appeared in the document
             else:
                 inverted_index[word][-1][1] += 1
         current_doc += 1
+    # Storing the document frequency for each term
     for word in total_count.keys():
         inverted_index[word].append(total_count[word])
     create_posting(documents)
     store_first_last_doc(documents)
+    return inverted_index
 
-
+# Utility method to create posting lists
 def create_posting(documents):
     current_pos = 1
     for doc in documents:
@@ -72,6 +78,7 @@ def create_posting(documents):
     return posting_list
 
 
+# Utility method to store document boundaries
 def store_first_last_doc(documents):
     prev_length = 0
     for i in range(1, len(documents) + 1):
@@ -81,8 +88,10 @@ def store_first_last_doc(documents):
         prev_length = doc_length
     doc_first_last[NegInf] = (NegInf, 0)
     doc_first_last[PosInf] = (doc_first_last[len(documents)][1] + 1, PosInf)
+    return doc_first_last
 
 
+# Returns the document number given a position
 def docid(position):
     if position == NegInf:
         return NegInf
@@ -101,6 +110,7 @@ def docid(position):
     return None
 
 
+# Utility method to perform binary search for implementing next_pos
 def binarysearch_high(term, low, high, current):
     while high - low > 1:
         mid = int((low + high) / 2)
@@ -111,6 +121,7 @@ def binarysearch_high(term, low, high, current):
     return high
 
 
+# Returns the next occurrence of a term given current position
 def next_pos(term, current):
     cache = {}
     cache[term] = -1
@@ -136,6 +147,7 @@ def next_pos(term, current):
     return posting_list[term][cache[term]]
 
 
+# Returns the document id of the next document containing the term
 def next_doc(term, current_doc):
     search_index = doc_first_last[current_doc][1]
     pos = next_pos(term, search_index)
@@ -143,6 +155,7 @@ def next_doc(term, current_doc):
     return (doc_num)
 
 
+# Utility method to perform binary search for implementing prev_pos
 def binarysearch_low(term, low, high, current):
     while high - low > 1:
         mid = int((low + high) / 2)
@@ -153,6 +166,7 @@ def binarysearch_low(term, low, high, current):
     return low
 
 
+# Returns the previous occurrence of a term given current position
 def prev_pos(term, current):
     cache = {}
     cache[term] = len(posting_list[term])
@@ -178,6 +192,7 @@ def prev_pos(term, current):
     return posting_list[term][cache[term]]
 
 
+# Returns the document id of the previous document containing the term
 def prev_doc(term, current_doc):
     if current_doc not in doc_first_last.keys():
         current_doc = PosInf
@@ -187,34 +202,23 @@ def prev_doc(term, current_doc):
     return (doc_num)
 
 
+# Creates a tree from reverse an expression in reverse polish notation
 def create_tree(expression):
     list_exp = expression.split(' ')
     return create_tree_helper(list_exp)
 
 
+# Utility method to create the expression tree recursively
 def create_tree_helper(expression):
     current = expression[0]
     expression.remove(current)
     if current not in [AND, OR]:
-        return Tree(None, current, None)
+        return ExpressionTree(None, current, None)
     else:
-        return Tree(create_tree_helper(expression), current, create_tree_helper(expression))
+        return ExpressionTree(create_tree_helper(expression), current, create_tree_helper(expression))
 
 
-def inorder(node):
-    if node is not None:
-        inorder(node.left)
-        print(node.val)
-        inorder(node.right)
-
-
-def assert_data(actual, expected):
-    if expected == actual:
-        print(str(actual))
-    else:
-        print("Fail - got ", str(actual))
-
-
+# Returns the end point of the first candidate solution after the current document
 def doc_right(node, position):
     if node.left is None and node.right is None:
         return next_doc(node.val, position)
@@ -224,6 +228,7 @@ def doc_right(node, position):
         return min(doc_right(node.left, position), doc_right(node.right, position))
 
 
+# Returns the starting point of the previous candidate solution before the current document
 def doc_left(node, position):
     if node.left is None and node.right is None:
         return prev_doc(node.val, position)
@@ -233,6 +238,7 @@ def doc_left(node, position):
         return max(doc_left(node.left, position), doc_left(node.right, position))
 
 
+# Finds the next valid document satisfying the query after the current position
 def next_solution(query_tree, position):
     v = doc_right(query_tree, position)
     if v == PosInf:
@@ -244,6 +250,7 @@ def next_solution(query_tree, position):
         return next_solution(query_tree, v)
 
 
+# Generates a set of docuements satisfying the boolean query
 def candidate_solutions(query_string):
     query_tree = create_tree(query_string)
     u = NegInf
@@ -254,17 +261,19 @@ def candidate_solutions(query_string):
     return valid_docs
 
 
+# Computes the term frequency for a given term
 def get_tf(doc_id, term):
     for pair in inverted_index[term][:-1]:
         if pair[0] == doc_id:
             return float(1 + math.log(pair[1], 2))
     return 0.0
 
-
+# Computes the inverse document frequency for a given term
 def get_idf(term):
     return float(math.log(len(valid_docs) / inverted_index[term][-1], 2))
 
 
+# Generates the document vector
 def compute_doc_vector():
     doc_vector = {}
     for doc_id in valid_docs:
@@ -278,11 +287,13 @@ def compute_doc_vector():
     return doc_vector
 
 
+# Utility method to normalize the document vector
 def normalize(vector):
     length = math.sqrt(sum(map(lambda x: x * x, vector)))
     return list(map(lambda x: x / length, vector))
 
 
+# Generates the query vector
 def compute_query_vector():
     query_vector = []
     query_terms = query.translate(query.maketrans('', '', '_ANDOR')).split()
@@ -298,10 +309,12 @@ def compute_query_vector():
     return normalize(norm_query_vector)
 
 
+# Utility method to compute the dot product of the document and query vectors
 def dot_product(doc_vector, query_vector):
     return sum(map(lambda x, y: x * y, doc_vector, query_vector))
 
 
+# Utility method to return the next first document id satisfying the boolean query after the current document
 def min_next_doc(doc_num):
     query_terms = query.translate(query.maketrans('', '', '_ANDOR')).split()
     tmp_docs = []
@@ -318,6 +331,7 @@ def min_next_doc(doc_num):
                 return PosInf
 
 
+# Computes the tf-idf scores and retuens the top k results
 def rank_cosine(k):
     norm_doc_vector = compute_doc_vector()
     norm_query_vector = compute_query_vector()
@@ -329,6 +343,7 @@ def rank_cosine(k):
     return results
 
 
+# Utility method to display the results of VSM
 def display_results(k, results):
     print('DocID\tScore\n')
     for i in range(k):
@@ -340,6 +355,7 @@ def display_results(k, results):
             break
 
 
+# Utility method to separate the terms in a document
 def separate_terms_in_documents(input_string):
     docs = input_string.split('\n\n')
     for i in range(len(docs)):
@@ -347,16 +363,11 @@ def separate_terms_in_documents(input_string):
         return docs
 
 
-########################################################################################################################
-
-
-# Reading the corpus file specified in command line
-
 def main():
     global documents
     global query
-    global valid_docs
 
+    # Reading the corpus file specified in command line
     with open(sys.argv[1], 'r') as text:
         input_string = text.read()
 
@@ -370,7 +381,7 @@ def main():
     query = sys.argv[3]
 
     # Creating an inverted index
-    create_index(documents)
+    create_index()
 
     # Generating a set of documents satisfying the given query
     valid_docs = candidate_solutions(query)
