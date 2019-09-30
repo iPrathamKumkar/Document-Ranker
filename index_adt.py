@@ -56,7 +56,7 @@ def create_index(documents):
     for word in total_count.keys():
         inverted_index[word].append(total_count[word])
     create_posting(documents)
-    doc_f_l(documents)
+    store_first_last_doc(documents)
 
 def create_posting(documents):
     current_pos = 1
@@ -89,7 +89,7 @@ def docid(position):
     return None
 
 
-def doc_f_l(documents):
+def store_first_last_doc(documents):
     prev_length = 0
     for i in range(1, len(documents) + 1):
         words = documents[i-1].split()
