@@ -1,11 +1,33 @@
+# Importing required libraries
 import sys
 import string
 import math
 
+# Defining the start and end of the corpus
 PosInf = sys.maxsize
 NegInf = -PosInf - 1
 
+# Storing boolean operators as constants
+AND='_AND'
+OR= '_OR'
 
+# Stores the inverted index for the corpus
+inverted_index = {}
+
+# Stores the posting list for the terms
+posting_list = {}
+
+# Stores the starting and ending position for each document
+doc_first_last = {}
+
+# Stores the set of documents satisfying the positive query
+valid_docs = []
+
+# Stores the results of the VSM computations
+result = {}
+
+
+# Defining a class to create a binary tree for query processing
 class Tree:
     def __init__(self, left, val, right):
         self.val = val
@@ -13,16 +35,7 @@ class Tree:
         self.right = right
 
 
-AND='_AND'
-OR= '_OR'
-
-inverted_index = {}
-posting_list = {}
-doc_first_last = {}
-valid_docs = []
-result = {}
-
-
+# Creating inverted index
 def create_index(documents):
     current_doc = 1
     total_count = {}
@@ -42,6 +55,8 @@ def create_index(documents):
         current_doc += 1
     for word in total_count.keys():
         inverted_index[word].append(total_count[word])
+    create_posting(documents)
+    doc_f_l(documents)
 
 def create_posting(documents):
     current_pos = 1
@@ -317,7 +332,10 @@ def rank_cosine(k):
             print("\nThe total number of documents is " + str(len(results)) + " which is less than the given value of k: " + str(k))
             break
 
-# Reading the corpus file specified command line
+
+########################################################################################################################
+
+# Reading the corpus file specified in command line
 with open(sys.argv[1], 'r') as text:
     input_string = text.read()
 
@@ -337,12 +355,6 @@ query = sys.argv[3]
 
 # Creating an inverted index
 create_index(documents)
-
-# Creating posting lists for the terms
-posting_list = create_posting(documents)
-
-# Storing the starting and ending indices of each document
-doc_f_l(documents)
 
 # Generating a set of documents satisfying the given query
 candidate_solutions(query)
