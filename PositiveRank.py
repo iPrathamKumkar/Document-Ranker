@@ -1,27 +1,74 @@
+# Importing required libraries
 import sys
 import string
+import math
 
+# Defining the start and end of the corpus
 PosInf = sys.maxsize
 NegInf = -PosInf - 1
 
+# Storing boolean operators as constants
+AND = '_AND'
+OR = '_OR'
 
-class Tree:
+# Stores the inverted index for the corpus
+inverted_index = {}
+
+# Stores the posting list for the terms
+posting_list = {}
+
+# Stores the starting and ending position for each document
+doc_first_last = {}
+
+# Stores the set of documents satisfying the positive query
+valid_docs = []
+
+# Stores the results of the VSM computations
+result = {}
+
+
+# Defining an expression tree class to represent the positive boolean query
+class ExpressionTree:
     def __init__(self, left, val, right):
         self.val = val
         self.left = left
         self.right = right
 
 
-AND='_AND'
-OR= '_OR'
+# Creates inverted index based on the corpus
+def create_index():
+    current_doc = 1
+    total_count = {}
+    for doc in documents:
+        appeared = []
+        # Storing doc_id, doc_count for each term
+        for word in doc.split():
+            # First occurrence of the term
+            if word not in inverted_index:
+                inverted_index[word] = [[current_doc, 1]]
+                appeared.append(word)
+                total_count[word] = 1
+            # First occurrence in a particular document
+            elif word not in appeared:
+                inverted_index[word].append([current_doc, 1])
+                appeared.append(word)
+                total_count[word] += 1
+            # If word has already appeared in the document
+            else:
+                inverted_index[word][-1][1] += 1
+        current_doc += 1
+    # Storing the document frequency for each term
+    for word in total_count.keys():
+        inverted_index[word].append(total_count[word])
+    create_posting(documents)
+    store_first_last_doc(documents)
+    return inverted_index
 
-posting_list = {}
-doc_first_last = {}
-
+# Utility method to create posting lists
 def create_posting(documents):
     current_pos = 1
-    for line in documents:
-        for word in line.split():
+    for doc in documents:
+        for word in doc.split():
             if word not in posting_list:
                 posting_list[word] = [current_pos]
             else:
@@ -31,9 +78,25 @@ def create_posting(documents):
     return posting_list
 
 
+# Utility method to store document boundaries
+def store_first_last_doc(documents):
+    prev_length = 0
+    for i in range(1, len(documents) + 1):
+        words = documents[i - 1].split()
+        doc_length = prev_length + len(words)
+        doc_first_last[i] = (prev_length + 1, doc_length)
+        prev_length = doc_length
+    doc_first_last[NegInf] = (NegInf, 0)
+    doc_first_last[PosInf] = (doc_first_last[len(documents)][1] + 1, PosInf)
+    return doc_first_last
+
+
+# Returns the document number given a position
 def docid(position):
     if position == NegInf:
-        return None
+        return NegInf
+    if position == PosInf:
+        return PosInf
     doc_num = 1
     prev_length = 0
     for doc in documents:
@@ -47,15 +110,7 @@ def docid(position):
     return None
 
 
-def doc_f_l(documents):
-    prev_length = 0
-    for i in range(1, len(documents) + 1):
-        words = documents[i-1].split()
-        doc_length = prev_length + len(words)
-        doc_first_last[i] = (prev_length + 1, doc_length)
-        prev_length = doc_length
-
-
+# Utility method to perform binary search for implementing next_pos
 def binarysearch_high(term, low, high, current):
     while high - low > 1:
         mid = int((low + high) / 2)
@@ -66,6 +121,7 @@ def binarysearch_high(term, low, high, current):
     return high
 
 
+# Returns the next occurrence of a term given current position
 def next_pos(term, current):
     cache = {}
     cache[term] = -1
@@ -75,7 +131,7 @@ def next_pos(term, current):
     if posting_list[term][0] > current:
         cache[term] = 0
         return posting_list[term][cache[term]]
-    if cache[term] > 0 and posting_list[cache[term]-1] <= current:
+    if cache[term] > 0 and posting_list[cache[term] - 1] <= current:
         low = cache[term] - 1
     else:
         low = 0
@@ -91,12 +147,15 @@ def next_pos(term, current):
     return posting_list[term][cache[term]]
 
 
+# Returns the document id of the next document containing the term
 def next_doc(term, current_doc):
-
-    pos = next_pos(term, current_doc)
+    search_index = doc_first_last[current_doc][1]
+    pos = next_pos(term, search_index)
     doc_num = docid(pos)
     return (doc_num)
 
+
+# Utility method to perform binary search for implementing prev_pos
 def binarysearch_low(term, low, high, current):
     while high - low > 1:
         mid = int((low + high) / 2)
@@ -107,6 +166,7 @@ def binarysearch_low(term, low, high, current):
     return low
 
 
+# Returns the previous occurrence of a term given current position
 def prev_pos(term, current):
     cache = {}
     cache[term] = len(posting_list[term])
@@ -132,92 +192,205 @@ def prev_pos(term, current):
     return posting_list[term][cache[term]]
 
 
-def prev_doc(term, current):
-    pos = prev_pos(term, current)
+# Returns the document id of the previous document containing the term
+def prev_doc(term, current_doc):
+    if current_doc not in doc_first_last.keys():
+        current_doc = PosInf
+    search_index = doc_first_last[current_doc][0]
+    pos = prev_pos(term, search_index)
     doc_num = docid(pos)
     return (doc_num)
 
 
+# Creates a tree from reverse an expression in reverse polish notation
 def create_tree(expression):
     list_exp = expression.split(' ')
     return create_tree_helper(list_exp)
 
 
+# Utility method to create the expression tree recursively
 def create_tree_helper(expression):
-    print(expression)
     current = expression[0]
     expression.remove(current)
     if current not in [AND, OR]:
-        return Tree(None, current, None)
+        return ExpressionTree(None, current, None)
     else:
-        return Tree(create_tree_helper(expression), current, create_tree_helper(expression))
-
-def inorder(node):
-    if node is not None:
-        inorder(node.left)
-        print(node.val)
-        inorder(node.right)
+        return ExpressionTree(create_tree_helper(expression), current, create_tree_helper(expression))
 
 
-def assert_data (actual, expected):
-    if expected == actual:
-        print (str(actual))
-    else:
-        print("Fail - got ", str(actual))
-
-
+# Returns the end point of the first candidate solution after the current document
 def doc_right(node, position):
     if node.left is None and node.right is None:
         return next_doc(node.val, position)
-    elif node.val is AND:
-        return max((doc_right(node.left), position), doc_right(node.right, position))
-    elif node.val is OR:
-        return min((doc_right(node.left), position), doc_right(node.right, position))
+    elif node.val == AND:
+        return max(doc_right(node.left, position), doc_right(node.right, position))
+    elif node.val == OR:
+        return min(doc_right(node.left, position), doc_right(node.right, position))
 
 
+# Returns the starting point of the previous candidate solution before the current document
 def doc_left(node, position):
     if node.left is None and node.right is None:
         return prev_doc(node.val, position)
-    elif node.val is AND:
-        return min((doc_left(node.left), position), doc_left(node.right, position))
-    elif node.val is OR:
-        return max((doc_left(node.left), position), doc_left(node.right, position))
+    elif node.val == AND:
+        return min(doc_left(node.left, position), doc_left(node.right, position))
+    elif node.val == OR:
+        return max(doc_left(node.left, position), doc_left(node.right, position))
 
 
-with open(sys.argv[1], 'r') as text:
-    input_string = text.read()
+# Finds the next valid document satisfying the query after the current position
+def next_solution(query_tree, position):
+    v = doc_right(query_tree, position)
+    if v == PosInf:
+        return PosInf
+    u = doc_left(query_tree, v + 1)
+    if u == v:
+        return u
+    else:
+        return next_solution(query_tree, v)
 
-input_string = input_string.translate(str.maketrans('', '', string.punctuation))
-input_string = input_string.lower()
-documents = input_string.split('\n\n')
-for i in range(len(documents)):
-    documents[i] = documents[i].replace('\n', ' ')
 
-query = sys.argv[2]
-# query = polish_to_infix(polish_query)
+# Generates a set of docuements satisfying the boolean query
+def candidate_solutions(query_string):
+    query_tree = create_tree(query_string)
+    u = NegInf
+    while u < PosInf:
+        u = next_solution(query_tree, u)
+        if u < PosInf:
+            valid_docs.append(u)
+    return valid_docs
 
-inv_index = create_posting(documents)
-print(inv_index)
-# for term in inv_index.keys():
-#     posting_list[term] = inv_index[term][1]
-print(documents)
-posting_list = create_posting(documents)
-# prev_pos
-# assert_data(prev_pos('you', 18), 16)
-# assert_data(prev_pos('quarrel', 2), -2147483648)
-# assert_data(prev_pos('sir', 30), 28)
-# assert_data(prev_pos('if', 10), 9)
-# assert_data(prev_pos('if', 30), 9)
 
-#prev_doc
-# assert_data(prev_doc('you',18), 3)
+# Computes the term frequency for a given term
+def get_tf(doc_id, term):
+    for pair in inverted_index[term][:-1]:
+        if pair[0] == doc_id:
+            return float(1 + math.log(pair[1], 2))
+    return 0.0
 
-# inorder(create_tree(query))
+# Computes the inverse document frequency for a given term
+def get_idf(term):
+    return float(math.log(len(valid_docs) / inverted_index[term][-1], 2))
 
-# x = doc_left(create_tree('_AND _OR quarrel sir you'), 4)
-# print(x)
 
-# print(prev_doc('sir', 12))
-doc_f_l(documents)
-print(doc_first_last)
+# Generates the document vector
+def compute_doc_vector():
+    doc_vector = {}
+    for doc_id in valid_docs:
+        tmp_list = []
+        for term in sorted(inverted_index.keys()):
+            tf = get_tf(doc_id, term)
+            idf = get_idf(term)
+            tmp_list.append(tf * idf)
+        doc_vector[doc_id] = normalize(tmp_list)
+    print(doc_vector)
+    return doc_vector
 
+
+# Utility method to normalize the document vector
+def normalize(vector):
+    length = math.sqrt(sum(map(lambda x: x * x, vector)))
+    return list(map(lambda x: x / length, vector))
+
+
+# Generates the query vector
+def compute_query_vector():
+    query_vector = []
+    query_terms = query.translate(query.maketrans('', '', '_ANDOR')).split()
+    for term in sorted(inverted_index.keys()):
+        if term in query_terms:
+            tf = float(1 + math.log(query_terms.count(term), 2))
+            idf = get_idf(term)
+            query_vector.append(tf * idf)
+        else:
+            query_vector.append(float(0))
+    norm_query_vector = normalize(query_vector)
+    print(norm_query_vector)
+    return normalize(norm_query_vector)
+
+
+# Utility method to compute the dot product of the document and query vectors
+def dot_product(doc_vector, query_vector):
+    return sum(map(lambda x, y: x * y, doc_vector, query_vector))
+
+
+# Utility method to return the next first document id satisfying the boolean query after the current document
+def min_next_doc(doc_num):
+    query_terms = query.translate(query.maketrans('', '', '_ANDOR')).split()
+    tmp_docs = []
+    for term in query_terms:
+        tmp_docs.append(next_doc(term, doc_num))
+
+    check_valid = sorted(tmp_docs)
+    for d in sorted(tmp_docs):
+        if d in valid_docs:
+            return d
+        elif d not in valid_docs:
+            check_valid.remove(d)
+            if len(check_valid) == 0:
+                return PosInf
+
+
+# Computes the tf-idf scores and retuens the top k results
+def rank_cosine(k):
+    norm_doc_vector = compute_doc_vector()
+    norm_query_vector = compute_query_vector()
+    d = min_next_doc(NegInf)
+    while d < PosInf:
+        result[d] = dot_product(norm_doc_vector[d], norm_query_vector)
+        d = min_next_doc(d)
+    results = sorted(result.items(), key=lambda x: x[1], reverse=True)
+    return results
+
+
+# Utility method to display the results of VSM
+def display_results(k, results):
+    print('DocID\tScore\n')
+    for i in range(k):
+        if i < len(results):
+            print(str(results[i][0]) + '\t\t' + str(results[i][1]))
+        else:
+            print("\nThe total number of documents is " + str(
+                len(results)) + " which is less than the given value of k: " + str(k))
+            break
+
+
+# Utility method to separate the terms in a document
+def separate_terms_in_documents(input_string):
+    docs = input_string.split('\n\n')
+    for i in range(len(docs)):
+        docs[i] = docs[i].replace('\n', ' ')
+        return docs
+
+
+def main():
+    global documents
+    global query
+
+    # Reading the corpus file specified in command line
+    with open(sys.argv[1], 'r') as text:
+        input_string = text.read()
+
+    # Removing punctuations and converting to lower case
+    input_string = input_string.translate(str.maketrans('', '', string.punctuation)).lower()
+
+    # Splitting the corpus into documents and separating the terms
+    documents = separate_terms_in_documents(input_string)
+
+    # Reading the positive query from command line
+    query = sys.argv[3]
+
+    # Creating an inverted index
+    create_index()
+
+    # Generating a set of documents satisfying the given query
+    valid_docs = candidate_solutions(query)
+
+    # Displaying the top k solutions
+    k = int(sys.argv[2])
+    results = rank_cosine(k)
+    display_results(k, results)
+
+
+if __name__ == '__main__':
+    main()
