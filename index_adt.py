@@ -8,8 +8,8 @@ PosInf = sys.maxsize
 NegInf = -PosInf - 1
 
 # Storing boolean operators as constants
-AND='_AND'
-OR= '_OR'
+AND = '_AND'
+OR = '_OR'
 
 # Stores the inverted index for the corpus
 inverted_index = {}
@@ -27,7 +27,7 @@ valid_docs = []
 result = {}
 
 
-# Defining a class to create a binary tree for query processing
+# Defining an expression tree class to represent the positive boolean query
 class Tree:
     def __init__(self, left, val, right):
         self.val = val
@@ -58,6 +58,7 @@ def create_index(documents):
     create_posting(documents)
     store_first_last_doc(documents)
 
+
 def create_posting(documents):
     current_pos = 1
     for doc in documents:
@@ -69,6 +70,17 @@ def create_posting(documents):
                 x += [current_pos]
             current_pos += 1
     return posting_list
+
+
+def store_first_last_doc(documents):
+    prev_length = 0
+    for i in range(1, len(documents) + 1):
+        words = documents[i - 1].split()
+        doc_length = prev_length + len(words)
+        doc_first_last[i] = (prev_length + 1, doc_length)
+        prev_length = doc_length
+    doc_first_last[NegInf] = (NegInf, 0)
+    doc_first_last[PosInf] = (doc_first_last[len(documents)][1] + 1, PosInf)
 
 
 def docid(position):
@@ -87,17 +99,6 @@ def docid(position):
             prev_length = doc_length
             doc_num += 1
     return None
-
-
-def store_first_last_doc(documents):
-    prev_length = 0
-    for i in range(1, len(documents) + 1):
-        words = documents[i-1].split()
-        doc_length = prev_length + len(words)
-        doc_first_last[i] = (prev_length + 1, doc_length)
-        prev_length = doc_length
-    doc_first_last[NegInf] = (NegInf, 0)
-    doc_first_last[PosInf] = (doc_first_last[len(documents)][1] + 1, PosInf)
 
 
 def binarysearch_high(term, low, high, current):
@@ -119,7 +120,7 @@ def next_pos(term, current):
     if posting_list[term][0] > current:
         cache[term] = 0
         return posting_list[term][cache[term]]
-    if cache[term] > 0 and posting_list[cache[term]-1] <= current:
+    if cache[term] > 0 and posting_list[cache[term] - 1] <= current:
         low = cache[term] - 1
     else:
         low = 0
@@ -207,9 +208,9 @@ def inorder(node):
         inorder(node.right)
 
 
-def assert_data (actual, expected):
+def assert_data(actual, expected):
     if expected == actual:
-        print (str(actual))
+        print(str(actual))
     else:
         print("Fail - got ", str(actual))
 
@@ -236,7 +237,7 @@ def next_solution(query_tree, position):
     v = doc_right(query_tree, position)
     if v == PosInf:
         return PosInf
-    u = doc_left(query_tree, v+1)
+    u = doc_left(query_tree, v + 1)
     if u == v:
         return u
     else:
@@ -250,6 +251,7 @@ def candidate_solutions(query_string):
         u = next_solution(query_tree, u)
         if u < PosInf:
             valid_docs.append(u)
+    return valid_docs
 
 
 def get_tf(doc_id, term):
@@ -260,7 +262,7 @@ def get_tf(doc_id, term):
 
 
 def get_idf(term):
-    return float(math.log(len(valid_docs)/inverted_index[term][-1], 2))
+    return float(math.log(len(valid_docs) / inverted_index[term][-1], 2))
 
 
 def compute_doc_vector():
@@ -270,7 +272,7 @@ def compute_doc_vector():
         for term in sorted(inverted_index.keys()):
             tf = get_tf(doc_id, term)
             idf = get_idf(term)
-            tmp_list.append(tf*idf)
+            tmp_list.append(tf * idf)
         doc_vector[doc_id] = normalize(tmp_list)
     print(doc_vector)
     return doc_vector
@@ -278,7 +280,7 @@ def compute_doc_vector():
 
 def normalize(vector):
     length = math.sqrt(sum(map(lambda x: x * x, vector)))
-    return list(map(lambda x : x / length, vector))
+    return list(map(lambda x: x / length, vector))
 
 
 def compute_query_vector():
@@ -288,7 +290,7 @@ def compute_query_vector():
         if term in query_terms:
             tf = float(1 + math.log(query_terms.count(term), 2))
             idf = get_idf(term)
-            query_vector.append(tf*idf)
+            query_vector.append(tf * idf)
         else:
             query_vector.append(float(0))
     norm_query_vector = normalize(query_vector)
@@ -324,40 +326,60 @@ def rank_cosine(k):
         result[d] = dot_product(norm_doc_vector[d], norm_query_vector)
         d = min_next_doc(d)
     results = sorted(result.items(), key=lambda x: x[1], reverse=True)
+    return results
+
+
+def display_results(k, results):
     print('DocID\tScore\n')
     for i in range(k):
         if i < len(results):
-            print(str(results[i][0])+'\t\t'+str(results[i][1]))
+            print(str(results[i][0]) + '\t\t' + str(results[i][1]))
         else:
-            print("\nThe total number of documents is " + str(len(results)) + " which is less than the given value of k: " + str(k))
+            print("\nThe total number of documents is " + str(
+                len(results)) + " which is less than the given value of k: " + str(k))
             break
+
+
+def separate_terms_in_documents(input_string):
+    docs = input_string.split('\n\n')
+    for i in range(len(docs)):
+        docs[i] = docs[i].replace('\n', ' ')
+        return docs
 
 
 ########################################################################################################################
 
+
 # Reading the corpus file specified in command line
-with open(sys.argv[1], 'r') as text:
-    input_string = text.read()
 
-# Removing punctuations
-input_string = input_string.translate(str.maketrans('', '', string.punctuation))
+def main():
+    global documents
+    global query
+    global valid_docs
 
-# Converting to lowercase
-input_string = input_string.lower()
+    with open(sys.argv[1], 'r') as text:
+        input_string = text.read()
 
-# Splitting the corpus into documents and separating the terms
-documents = input_string.split('\n\n')
-for i in range(len(documents)):
-    documents[i] = documents[i].replace('\n', ' ')
+    # Removing punctuations and converting to lower case
+    input_string = input_string.translate(str.maketrans('', '', string.punctuation)).lower()
 
-# Reading the positive query from command line
-query = sys.argv[3]
+    # Splitting the corpus into documents and separating the terms
+    documents = separate_terms_in_documents(input_string)
 
-# Creating an inverted index
-create_index(documents)
+    # Reading the positive query from command line
+    query = sys.argv[3]
 
-# Generating a set of documents satisfying the given query
-candidate_solutions(query)
+    # Creating an inverted index
+    create_index(documents)
 
-# Returning the top k solutions
-rank_cosine(5)
+    # Generating a set of documents satisfying the given query
+    valid_docs = candidate_solutions(query)
+
+    # Displaying the top k solutions
+    k = int(sys.argv[2])
+    results = rank_cosine(k)
+    display_results(k, results)
+
+
+if __name__ == '__main__':
+    main()
