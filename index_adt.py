@@ -4,6 +4,8 @@ import string
 import math
 
 # Defining the start and end of the corpus
+from functools import reduce
+
 PosInf = sys.maxsize
 NegInf = -PosInf - 1
 
@@ -362,6 +364,17 @@ def separate_terms_in_documents(input_string):
         docs[i] = docs[i].replace('\n', ' ')
         return docs
 
+# Converts query terms to lower case
+def normalize_query(query):
+    tmp_query = []
+    for x in query.split():
+        if not (x == AND or x == OR):
+            tmp_query.append(x.lower())
+        else:
+            tmp_query.append(x)
+    query = reduce(lambda x, y: x + ' ' + y, tmp_query)
+    return query
+
 
 def main():
     global documents
@@ -379,6 +392,7 @@ def main():
 
     # Reading the positive query from command line
     query = sys.argv[3]
+    query = normalize_query(query)
 
     # Creating an inverted index
     create_index()
