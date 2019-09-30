@@ -6,8 +6,8 @@ import math
 # Defining the start and end of the corpus
 from functools import reduce
 
-PosInf = sys.maxsize
-NegInf = -PosInf - 1
+POSITIVE_INFINITY = sys.maxsize
+NEGATIVE_INFINITY = -POSITIVE_INFINITY - 1
 
 # Storing boolean operators as constants
 AND = '_AND'
@@ -94,17 +94,17 @@ def store_first_last_doc(documents):
         doc_length = prev_length + len(words)
         doc_first_last[i] = (prev_length + 1, doc_length)
         prev_length = doc_length
-    doc_first_last[NegInf] = (NegInf, 0)
-    doc_first_last[PosInf] = (doc_first_last[len(documents)][1] + 1, PosInf)
+    doc_first_last[NEGATIVE_INFINITY] = (NEGATIVE_INFINITY, 0)
+    doc_first_last[POSITIVE_INFINITY] = (doc_first_last[len(documents)][1] + 1, POSITIVE_INFINITY)
     return doc_first_last
 
 
 # Returns the document number given a position
 def docid(position):
-    if position == NegInf:
-        return NegInf
-    if position == PosInf:
-        return PosInf
+    if position == NEGATIVE_INFINITY:
+        return NEGATIVE_INFINITY
+    if position == POSITIVE_INFINITY:
+        return POSITIVE_INFINITY
     doc_num = 1
     prev_length = 0
     for doc in documents:
@@ -131,12 +131,13 @@ def binarysearch_high(term, low, high, current):
 
 # Returns the next occurrence of a term given current position
 def next_pos(term, current):
+    # Query term not present in the inverted index
     if term not in posting_list.keys():
-        return PosInf
+        return POSITIVE_INFINITY
     cache_next_pos[term] = -1
     length_posting = len(posting_list[term]) - 1
     if len(posting_list[term]) == 0 or posting_list[term][length_posting] <= current:
-        return PosInf
+        return POSITIVE_INFINITY
     if posting_list[term][0] > current:
         cache_next_pos[term] = 0
         return posting_list[term][cache_next_pos[term]]
@@ -177,12 +178,13 @@ def binarysearch_low(term, low, high, current):
 
 # Returns the previous occurrence of a term given current position
 def prev_pos(term, current):
+    # Query term not present in the inverted index
     if term not in posting_list.keys():
-        return NegInf
+        return NEGATIVE_INFINITY
     cache_prev_pos[term] = len(posting_list[term])
     length_posting = len(posting_list[term]) - 1
     if len(posting_list[term]) == 0 or posting_list[term][0] >= current:
-        return NegInf
+        return NEGATIVE_INFINITY
     if posting_list[term][length_posting] < current:
         cache_prev_pos[term] = length_posting
         return posting_list[term][cache_prev_pos[term]]
@@ -205,7 +207,7 @@ def prev_pos(term, current):
 # Returns the document id of the previous document containing the term
 def prev_doc(term, current_doc):
     if current_doc not in doc_first_last.keys():
-        current_doc = PosInf
+        current_doc = POSITIVE_INFINITY
     search_index = doc_first_last[current_doc][0]
     pos = prev_pos(term, search_index)
     doc_num = docid(pos)
@@ -251,8 +253,8 @@ def doc_left(node, position):
 # Finds the next valid document satisfying the query after the current position
 def next_solution(query_tree, position):
     v = doc_right(query_tree, position)
-    if v == PosInf:
-        return PosInf
+    if v == POSITIVE_INFINITY:
+        return POSITIVE_INFINITY
     u = doc_left(query_tree, v + 1)
     if u == v:
         return u
@@ -263,10 +265,10 @@ def next_solution(query_tree, position):
 # Generates a set of docuements satisfying the boolean query
 def candidate_solutions(query_string):
     query_tree = create_tree(query_string)
-    u = NegInf
-    while u < PosInf:
+    u = NEGATIVE_INFINITY
+    while u < POSITIVE_INFINITY:
         u = next_solution(query_tree, u)
-        if u < PosInf:
+        if u < POSITIVE_INFINITY:
             valid_docs.append(u)
     return valid_docs
 
@@ -340,15 +342,15 @@ def min_next_doc(doc_num):
         elif d not in valid_docs:
             check_valid.remove(d)
             if len(check_valid) == 0:
-                return PosInf
+                return POSITIVE_INFINITY
 
 
 # Computes the tf-idf scores and retuens the top k results
 def rank_cosine(k):
     norm_doc_vector = compute_doc_vector()
     norm_query_vector = compute_query_vector()
-    d = min_next_doc(NegInf)
-    while d < PosInf:
+    d = min_next_doc(NEGATIVE_INFINITY)
+    while d < POSITIVE_INFINITY:
         result[d] = dot_product(norm_doc_vector[d], norm_query_vector)
         d = min_next_doc(d)
     results = sorted(result.items(), key=lambda x: x[1], reverse=True)
