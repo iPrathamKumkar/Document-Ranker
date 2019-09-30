@@ -19,6 +19,12 @@ inverted_index = {}
 # Stores the posting list for the terms
 posting_list = {}
 
+# Cache used in galloping search for next position
+cache_next_pos = {}
+
+# Cache used in galloping search for previous position
+cache_prev_pos = {}
+
 # Stores the starting and ending position for each document
 doc_first_last = {}
 
@@ -125,16 +131,15 @@ def binarysearch_high(term, low, high, current):
 
 # Returns the next occurrence of a term given current position
 def next_pos(term, current):
-    cache = {}
-    cache[term] = -1
+    cache_next_pos[term] = -1
     length_posting = len(posting_list[term]) - 1
     if len(posting_list[term]) == 0 or posting_list[term][length_posting] <= current:
         return PosInf
     if posting_list[term][0] > current:
-        cache[term] = 0
-        return posting_list[term][cache[term]]
-    if cache[term] > 0 and posting_list[cache[term] - 1] <= current:
-        low = cache[term] - 1
+        cache_next_pos[term] = 0
+        return posting_list[term][cache_next_pos[term]]
+    if cache_next_pos[term] > 0 and posting_list[cache_next_pos[term] - 1] <= current:
+        low = cache_next_pos[term] - 1
     else:
         low = 0
     jump = 1
@@ -145,8 +150,8 @@ def next_pos(term, current):
         high = low + jump
     if high > length_posting:
         high = length_posting
-    cache[term] = binarysearch_high(term, low, high, current)
-    return posting_list[term][cache[term]]
+    cache_next_pos[term] = binarysearch_high(term, low, high, current)
+    return posting_list[term][cache_next_pos[term]]
 
 
 # Returns the document id of the next document containing the term
@@ -170,16 +175,16 @@ def binarysearch_low(term, low, high, current):
 
 # Returns the previous occurrence of a term given current position
 def prev_pos(term, current):
-    cache = {}
-    cache[term] = len(posting_list[term])
+    cache_prev_pos = {}
+    cache_prev_pos[term] = len(posting_list[term])
     length_posting = len(posting_list[term]) - 1
     if len(posting_list[term]) == 0 or posting_list[term][0] >= current:
         return NegInf
     if posting_list[term][length_posting] < current:
-        cache[term] = length_posting
-        return posting_list[term][cache[term]]
-    if cache[term] < length_posting and posting_list[cache[term] + 1] >= current:
-        high = cache[term] + 1
+        cache_prev_pos[term] = length_posting
+        return posting_list[term][cache_prev_pos[term]]
+    if cache_prev_pos[term] < length_posting and posting_list[cache_prev_pos[term] + 1] >= current:
+        high = cache_prev_pos[term] + 1
     else:
         high = length_posting
     jump = 1
@@ -190,8 +195,8 @@ def prev_pos(term, current):
         low = high - jump
     if low < 0:
         low = 0
-    cache[term] = binarysearch_low(term, low, high, current)
-    return posting_list[term][cache[term]]
+    cache_prev_pos[term] = binarysearch_low(term, low, high, current)
+    return posting_list[term][cache_prev_pos[term]]
 
 
 # Returns the document id of the previous document containing the term
@@ -379,6 +384,7 @@ def normalize_query(query):
 def main():
     global documents
     global query
+    global valid_docs
 
     # Reading the corpus file specified in command line
     with open(sys.argv[1], 'r') as text:
@@ -399,7 +405,6 @@ def main():
 
     # Generating a set of documents satisfying the given query
     valid_docs = candidate_solutions(query)
-
     # Displaying the top k solutions
     k = int(sys.argv[2])
     results = rank_cosine(k)
