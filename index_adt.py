@@ -131,6 +131,8 @@ def binarysearch_high(term, low, high, current):
 
 # Returns the next occurrence of a term given current position
 def next_pos(term, current):
+    if term not in posting_list.keys():
+        return PosInf
     cache_next_pos[term] = -1
     length_posting = len(posting_list[term]) - 1
     if len(posting_list[term]) == 0 or posting_list[term][length_posting] <= current:
@@ -175,7 +177,8 @@ def binarysearch_low(term, low, high, current):
 
 # Returns the previous occurrence of a term given current position
 def prev_pos(term, current):
-    cache_prev_pos = {}
+    if term not in posting_list.keys():
+        return NegInf
     cache_prev_pos[term] = len(posting_list[term])
     length_posting = len(posting_list[term]) - 1
     if len(posting_list[term]) == 0 or posting_list[term][0] >= current:
@@ -290,13 +293,15 @@ def compute_doc_vector():
             idf = get_idf(term)
             tmp_list.append(tf * idf)
         doc_vector[doc_id] = normalize(tmp_list)
-    print(doc_vector)
+    # print(doc_vector)
     return doc_vector
 
 
 # Utility method to normalize the document vector
 def normalize(vector):
     length = math.sqrt(sum(map(lambda x: x * x, vector)))
+    if length == 0.0:
+        return []
     return list(map(lambda x: x / length, vector))
 
 
@@ -312,7 +317,7 @@ def compute_query_vector():
         else:
             query_vector.append(float(0))
     norm_query_vector = normalize(query_vector)
-    print(norm_query_vector)
+    # print(norm_query_vector)
     return normalize(norm_query_vector)
 
 
@@ -352,14 +357,17 @@ def rank_cosine(k):
 
 # Utility method to display the results of VSM
 def display_results(k, results):
-    print('DocID\tScore\n')
-    for i in range(k):
-        if i < len(results):
-            print(str(results[i][0]) + '\t\t' + str(results[i][1]))
-        else:
-            print("\nThe total number of documents is " + str(
-                len(results)) + " which is less than the given value of k: " + str(k))
-            break
+    if results is None or len(results) == 0:
+        print("Query not found in the corpus.")
+    else:
+        print('DocID\tScore\n')
+        for i in range(k):
+            if i < len(results):
+                print(str(results[i][0]) + '\t\t' + str(results[i][1]))
+            else:
+                print("\nThe total number of documents is " + str(
+                    len(results)) + " which is less than the given value of k: " + str(k))
+                break
 
 
 # Utility method to separate the terms in a document
@@ -397,8 +405,7 @@ def main():
     documents = separate_terms_in_documents(input_string)
 
     # Reading the positive query from command line
-    query = sys.argv[3]
-    query = normalize_query(query)
+    query = normalize_query(sys.argv[3])
 
     # Creating an inverted index
     create_index()
