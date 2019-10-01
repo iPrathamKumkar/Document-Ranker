@@ -2,8 +2,6 @@
 import sys
 import string
 import math
-
-# Defining the start and end of the corpus
 from functools import reduce
 
 # Defining constants to denote the start and end of corpus
@@ -347,7 +345,6 @@ def min_next_doc(doc_num):
     tmp_docs = []
     for term in query_terms:
         tmp_docs.append(next_doc(term, doc_num))
-
     check_valid = sorted(tmp_docs)
     for d in sorted(tmp_docs):
         if d in valid_docs:
@@ -358,7 +355,7 @@ def min_next_doc(doc_num):
                 return POSITIVE_INFINITY
 
 
-# Computes the tf-idf scores and retuens the top k results
+# Computes the tf-idf scores and returns the top k results
 def rank_cosine(k):
     # Creating the document and query vectors
     norm_doc_vector = compute_doc_vector()
