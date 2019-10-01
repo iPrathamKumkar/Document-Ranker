@@ -384,7 +384,7 @@ def normalize_query(query):
     tmp_query = []
     for x in query.split():
         if not (x == AND or x == OR):
-            tmp_query.append(x.lower())
+            tmp_query.append(x.translate(str.maketrans('', '', string.punctuation)).lower())
         else:
             tmp_query.append(x)
     query = reduce(lambda x, y: x + ' ' + y, tmp_query)
