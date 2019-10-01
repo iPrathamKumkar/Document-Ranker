@@ -282,7 +282,7 @@ def get_tf(doc_id, term):
 
 # Computes the inverse document frequency for a given term
 def get_idf(term):
-    return float(math.log(len(valid_docs) / inverted_index[term][-1], 2))
+    return float(math.log(len(documents) / inverted_index[term][-1], 2))
 
 
 # Generates the document vector
@@ -291,11 +291,11 @@ def compute_doc_vector():
     for doc_id in valid_docs:
         tmp_list = []
         for term in sorted(inverted_index.keys()):
+            # Considering the total documents in the corpus to compute the tf and idf values
             tf = get_tf(doc_id, term)
             idf = get_idf(term)
             tmp_list.append(tf * idf)
         doc_vector[doc_id] = normalize(tmp_list)
-    # print(doc_vector)
     return doc_vector
 
 
@@ -416,7 +416,10 @@ def main():
     valid_docs = candidate_solutions(query)
     # Displaying the top k solutions
     k = int(sys.argv[2])
-    results = rank_cosine(k)
+    if len(valid_docs) > 0:
+        results = rank_cosine(k)
+    else:
+        results = {}
     display_results(k, results)
 
 
