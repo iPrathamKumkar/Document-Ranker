@@ -108,7 +108,7 @@ def docid(position):
     doc_num = 1
     prev_length = 0
     for doc in documents:
-        words = doc.split(' ')
+        words = doc.split()
         doc_length = len(words) + prev_length
         if position <= doc_length:
             return doc_num
@@ -216,7 +216,7 @@ def prev_doc(term, current_doc):
 
 # Creates a tree from reverse an expression in reverse polish notation
 def create_tree(expression):
-    list_exp = expression.split(' ')
+    list_exp = expression.split()
     return create_tree_helper(list_exp)
 
 
@@ -414,6 +414,8 @@ def main():
 
     # Generating a set of documents satisfying the given query
     valid_docs = candidate_solutions(query)
+
+
     # Displaying the top k solutions
     k = int(sys.argv[2])
     if len(valid_docs) > 0:
