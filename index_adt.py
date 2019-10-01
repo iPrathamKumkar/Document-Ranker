@@ -6,6 +6,7 @@ import math
 # Defining the start and end of the corpus
 from functools import reduce
 
+# Defining constants to denote the start and end of corpus
 POSITIVE_INFINITY = sys.maxsize
 NEGATIVE_INFINITY = -POSITIVE_INFINITY - 1
 
@@ -136,8 +137,10 @@ def next_pos(term, current):
         return POSITIVE_INFINITY
     cache_next_pos[term] = -1
     length_posting = len(posting_list[term]) - 1
+    # No next occurrence of a term
     if len(posting_list[term]) == 0 or posting_list[term][length_posting] <= current:
         return POSITIVE_INFINITY
+    # Setting up cache for the first time
     if posting_list[term][0] > current:
         cache_next_pos[term] = 0
         return posting_list[term][cache_next_pos[term]]
@@ -147,12 +150,14 @@ def next_pos(term, current):
         low = 0
     jump = 1
     high = low + jump
+    # Galloping till the required term is passed
     while high < length_posting and posting_list[term][high] <= current:
         low = high
         jump *= 2
         high = low + jump
     if high > length_posting:
         high = length_posting
+    # Peforming binary search within the limits
     cache_next_pos[term] = binarysearch_high(term, low, high, current)
     return posting_list[term][cache_next_pos[term]]
 
@@ -183,8 +188,10 @@ def prev_pos(term, current):
         return NEGATIVE_INFINITY
     cache_prev_pos[term] = len(posting_list[term])
     length_posting = len(posting_list[term]) - 1
+    # No previous occurrence of a term
     if len(posting_list[term]) == 0 or posting_list[term][0] >= current:
         return NEGATIVE_INFINITY
+    # Setting up cache for the first time
     if posting_list[term][length_posting] < current:
         cache_prev_pos[term] = length_posting
         return posting_list[term][cache_prev_pos[term]]
@@ -194,12 +201,14 @@ def prev_pos(term, current):
         high = length_posting
     jump = 1
     low = high - jump
+    # Galloping till the required term is passed
     while low > 0 and posting_list[term][low] >= current:
         high = low
         jump *= 2
         low = high - jump
     if low < 0:
         low = 0
+     # Peforming binary search within the limits
     cache_prev_pos[term] = binarysearch_low(term, low, high, current)
     return posting_list[term][cache_prev_pos[term]]
 
@@ -224,14 +233,17 @@ def create_tree(expression):
 def create_tree_helper(expression):
     current = expression[0]
     expression.remove(current)
+    # Setting up query terms as leaf nodes
     if current not in [AND, OR]:
         return ExpressionTree(None, current, None)
     else:
+        # Creating left and right subtrees for the boolean operators
         return ExpressionTree(create_tree_helper(expression), current, create_tree_helper(expression))
 
 
 # Returns the end point of the first candidate solution after the current document
 def doc_right(node, position):
+    # When a leaf node is encountered
     if node.left is None and node.right is None:
         return next_doc(node.val, position)
     elif node.val == AND:
@@ -242,6 +254,7 @@ def doc_right(node, position):
 
 # Returns the starting point of the previous candidate solution before the current document
 def doc_left(node, position):
+    # When a leaf node is encountered
     if node.left is None and node.right is None:
         return prev_doc(node.val, position)
     elif node.val == AND:
@@ -276,6 +289,7 @@ def candidate_solutions(query_string):
 # Computes the term frequency for a given term
 def get_tf(doc_id, term):
     for pair in inverted_index[term][:-1]:
+        # If the term is present in the given document
         if pair[0] == doc_id:
             return float(1 + math.log(pair[1], 2))
     return 0.0
@@ -319,7 +333,6 @@ def compute_query_vector():
         else:
             query_vector.append(float(0))
     norm_query_vector = normalize(query_vector)
-    # print(norm_query_vector)
     return normalize(norm_query_vector)
 
 
@@ -347,6 +360,7 @@ def min_next_doc(doc_num):
 
 # Computes the tf-idf scores and retuens the top k results
 def rank_cosine(k):
+    # Creating the document and query vectors
     norm_doc_vector = compute_doc_vector()
     norm_query_vector = compute_query_vector()
     d = min_next_doc(NEGATIVE_INFINITY)
@@ -362,10 +376,11 @@ def display_results(k, results):
     if results is None or len(results) == 0:
         print("Query not found in the corpus.")
     else:
+        # Printing document ids and scores
         print('DocID\tScore\n')
         for i in range(k):
             if i < len(results):
-                print(str(results[i][0]) + '\t\t' + str(results[i][1]))
+                print(str(results[i][0]) + '\t' + str(results[i][1]))
             else:
                 print("\nThe total number of documents is " + str(
                     len(results)) + " which is less than the given value of k: " + str(k))
@@ -384,6 +399,7 @@ def normalize_query(query):
     tmp_query = []
     for x in query.split():
         if not (x == AND or x == OR):
+            # Stripping punctuations from query terms and converting to lowercase
             tmp_query.append(x.translate(str.maketrans('', '', string.punctuation)).lower())
         else:
             tmp_query.append(x)
