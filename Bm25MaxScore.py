@@ -1,4 +1,5 @@
 import math
+import operator
 import string
 import sys
 
@@ -203,7 +204,17 @@ def heapify_results(results):
     return results
 
 
+def generate_max_scores(query):
+    max_score = {}
+    for term in query:
+        max_score[term] = 2.2 * get_idf(term)
+    max_score = sorted(max_score.items(), key=operator.itemgetter(1))
+    return max_score
+
+
 def rank_bm25(avg_doc_length, k, query):
+    max_score = generate_max_scores(query)
+    print(max_score)
     # Heap for storing the top k results
     results = []
     for i in range(k):
@@ -218,6 +229,10 @@ def rank_bm25(avg_doc_length, k, query):
     terms = heapify_terms(terms)
     print(terms)
     while terms[0]["nextDoc"] < POSITIVE_INFINITY:
+        if results[0]["score"] > max_score[0][1]:
+            terms = list(filter(lambda x: x["term"] != max_score[0][0], terms))
+            del max_score[0]
+            terms = heapify_terms(terms)
         d = terms[0]["nextDoc"]
         score = 0
         while terms[0]["nextDoc"] == d:
@@ -234,6 +249,7 @@ def rank_bm25(avg_doc_length, k, query):
 
 def main():
     global documents
+    global inverted_index
     # Reading the corpus file specified in command line
     with open(sys.argv[1], 'r') as text:
         input_string = text.read()
@@ -252,16 +268,10 @@ def main():
     # Creating an inverted index
     inverted_index = create_index(documents)
 
-    # Generating a set of documents satisfying the given query
 
     # Displaying the top k solutions
     k = int(sys.argv[2])
-    #
-    # print(inverted_index)
-    # print(query)
-
     results = rank_bm25(avg_doc_length, k, query)
-
     print(results)
 
 

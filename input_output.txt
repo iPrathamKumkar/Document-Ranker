@@ -1,0 +1,24 @@
+p_corpus.txt 5 "cosine java is project"
+
+C:\Users\prath\AppData\Local\Programs\Python\Python37-32\python.exe C:/Users/prath/cs267hw2/Bm25MaxScore.py p_corpus.txt 5 "cosine java is project"
+[{'term': 'java', 'nextDoc': 1}, {'term': 'is', 'nextDoc': 1}, {'term': 'project', 'nextDoc': 3}, {'term': 'cosine', 'nextDoc': 5}]
+[{'docid': 6, 'score': 0.5849625007211562}, {'docid': 4, 'score': 1.1699250014423124}, {'docid': 5, 'score': 2.584962500721156}, {'docid': 1, 'score': 3.169925001442312}, {'docid': 3, 'score': 3.7548875021634682}]
+
+Process finished with exit code 0
+
+p_corpus.txt 5 "query with term"
+
+C:\Users\prath\AppData\Local\Programs\Python\Python37-32\python.exe C:/Users/prath/cs267hw2/Bm25MaxScore.py p_corpus.txt 5 "query with term"
+[{'term': 'with', 'nextDoc': 4}, {'term': 'query', 'nextDoc': 5}, {'term': 'term', 'nextDoc': 5}]
+[{'docid': 0, 'score': 0}, {'docid': 0, 'score': 0}, {'docid': 6, 'score': 1.5849625007211563}, {'docid': 4, 'score': 1.5849625007211563}, {'docid': 5, 'score': 5.754887502163468}]
+
+Process finished with exit code 0
+
+p_corpus.txt 5 "macos python string"
+
+C:\Users\prath\AppData\Local\Programs\Python\Python37-32\python.exe C:/Users/prath/cs267hw2/Bm25MaxScore.py p_corpus.txt 5 "macos python string"
+[{'term': 'python', 'nextDoc': 1}, {'term': 'macos', 'nextDoc': 3}, {'term': 'string', 'nextDoc': 6}]
+[{'docid': 0, 'score': 0}, {'docid': 2, 'score': 1.5849625007211563}, {'docid': 1, 'score': 1.5849625007211563}, {'docid': 6, 'score': 2.584962500721156}, {'docid': 3, 'score': 2.584962500721156}]
+
+Process finished with exit code 0
+
