@@ -193,6 +193,45 @@ def get_average_doc_length(documents):
     return avg_doc_length
 
 
+def heapify_terms(terms):
+    terms = sorted(terms, key=lambda term: term["nextDoc"])
+    return terms
+
+
+def heapify_results(results):
+    results = sorted(results, key=lambda result: result["score"])
+    return results
+
+
+def rank_bm25(avg_doc_length, k, query):
+    # Heap for storing the top k results
+    results = []
+    for i in range(k):
+        results_data = {"docid": 0, "score": 0}
+        results.append(results_data)
+    # Heap for storing query terms
+    terms = []
+    for i in range(len(query)):
+        terms_data = {"term": query[i], "nextDoc": next_doc(query[i], NEGATIVE_INFINITY)}
+        terms.append(terms_data)
+    # Establishing heap property for terms
+    terms = heapify_terms(terms)
+    print(terms)
+    while terms[0]["nextDoc"] < POSITIVE_INFINITY:
+        d = terms[0]["nextDoc"]
+        score = 0
+        while terms[0]["nextDoc"] == d:
+            t = terms[0]["term"]
+            score = score + get_idf(t) * get_tf_bm25(d, t, avg_doc_length)
+            terms[0]["nextDoc"] = next_doc(t, d)
+            terms = heapify_terms(terms)
+        if score > results[0]["score"]:
+            results[0]["docid"] = d
+            results[0]["score"] = score
+            results = heapify_results(results)
+    return results
+
+
 def main():
     global documents
     # Reading the corpus file specified in command line
@@ -221,30 +260,9 @@ def main():
     # print(inverted_index)
     # print(query)
 
-    # Heap for storing the top k results
-    results = []
-    for i in range(k):
-        results_data = {"docid": 0, "score": 0}
-        results.append(results_data)
+    results = rank_bm25(avg_doc_length, k, query)
+
     print(results)
-
-    # Heap for storing query terms
-    terms = []
-    for i in range(len(query)):
-        terms_data = {"term": query[i], "nextDoc": next_doc(query[i], NEGATIVE_INFINITY)}
-        terms.append(terms_data)
-    print(terms)
-
-    # Establishing heap property for terms
-    terms = sorted(terms, key=lambda term: term["nextDoc"])
-    print(terms)
-
-    while terms[0]["nextDoc"] < POSITIVE_INFINITY:
-        d = terms[0]["nextDoc"]
-        score = 0
-        while terms[0]["nextDoc"] == d:
-            t = terms[0]["term"]
-            score = score + get_idf(t) * get_tf_bm25(t, d, avg_doc_length)
 
 
 if __name__ == '__main__':
