@@ -1,3 +1,4 @@
+import math
 import string
 import sys
 
@@ -5,8 +6,14 @@ import sys
 POSITIVE_INFINITY = sys.maxsize
 NEGATIVE_INFINITY = -POSITIVE_INFINITY - 1
 
-# Utility method to separate the terms in a document
-from functools import reduce
+k1 = 1.2
+b = 0.75
+
+# Stores the inverted index for the corpus
+inverted_index = {}
+
+# Stores the posting list for the terms
+posting_list = {}
 
 # Cache used in galloping search for next position
 cache_next_pos = {}
@@ -22,7 +29,7 @@ def separate_terms_in_documents(input_string):
     docs = input_string.split('\n\n')
     for i in range(len(docs)):
         docs[i] = docs[i].replace('\n', ' ')
-        return docs
+    return docs
 
 
 # Converts query terms to lower case
@@ -37,9 +44,6 @@ def normalize_query(query):
 
 # Utility method to create posting lists
 def create_posting(documents):
-    # Stores the posting list for the terms
-    posting_list = {}
-
     current_pos = 1
     for doc in documents:
         for word in doc.split():
@@ -65,10 +69,19 @@ def store_first_last_doc(documents):
     return doc_first_last
 
 
+# Utility method to perform binary search for implementing next_pos
+def binarysearch_high(term, low, high, current):
+    while high - low > 1:
+        mid = int((low + high) / 2)
+        if posting_list[term][mid] <= current:
+            low = mid
+        else:
+            high = mid
+    return high
+
+
 # Creates inverted index based on the corpus
 def create_index(documents):
-    # Stores the inverted index for the corpus
-    inverted_index = {}
     current_doc = 1
     total_count = {}
     for doc in documents:
@@ -97,7 +110,91 @@ def create_index(documents):
     return inverted_index
 
 
+# Returns the next occurrence of a term given current position
+def next_pos(term, current):
+    # Query term not present in the inverted index
+    if term not in posting_list.keys():
+        return POSITIVE_INFINITY
+    cache_next_pos[term] = -1
+    length_posting = len(posting_list[term]) - 1
+    # No next occurrence of a term
+    if len(posting_list[term]) == 0 or posting_list[term][length_posting] <= current:
+        return POSITIVE_INFINITY
+    # Setting up cache for the first time
+    if posting_list[term][0] > current:
+        cache_next_pos[term] = 0
+        return posting_list[term][cache_next_pos[term]]
+    if cache_next_pos[term] > 0 and posting_list[cache_next_pos[term] - 1] <= current:
+        low = cache_next_pos[term] - 1
+    else:
+        low = 0
+    jump = 1
+    high = low + jump
+    # Galloping till the required term is passed
+    while high < length_posting and posting_list[term][high] <= current:
+        low = high
+        jump *= 2
+        high = low + jump
+    if high > length_posting:
+        high = length_posting
+    # Peforming binary search within the limits
+    cache_next_pos[term] = binarysearch_high(term, low, high, current)
+    return posting_list[term][cache_next_pos[term]]
+
+
+# Returns the document number given a position
+def docid(position):
+    if position == NEGATIVE_INFINITY:
+        return NEGATIVE_INFINITY
+    if position == POSITIVE_INFINITY:
+        return POSITIVE_INFINITY
+    doc_num = 1
+    prev_length = 0
+    for doc in documents:
+        words = doc.split()
+        doc_length = len(words) + prev_length
+        if position <= doc_length:
+            return doc_num
+        else:
+            prev_length = doc_length
+            doc_num += 1
+    return None
+
+
+# Returns the document id of the next document containing the term
+def next_doc(term, current_doc):
+    search_index = doc_first_last[current_doc][1]
+    pos = next_pos(term, search_index)
+    doc_num = docid(pos)
+    return (doc_num)
+
+
+def get_idf(term):
+    return float(math.log(len(documents) / inverted_index[term][-1], 2))
+
+
+def doc_length(doc_id):
+    return len(documents[doc_id - 1].split())
+
+
+def get_tf_bm25(doc_id, term, avg_doc_length):
+    for pair in inverted_index[term][:-1]:
+        # If the term is present in the given document
+        if pair[0] == doc_id:
+            (pair[1] * (k1 + 1)) / (pair[1] + k1 * ((1 - b) + b * doc_length(doc_id) / avg_doc_length))
+            return float(1 + math.log(pair[1], 2))
+    return 0.0
+
+
+def get_average_doc_length(documents):
+    # doc_terms = documents.split();
+    doc_lengths = list(map(lambda x: len(x), list(map(lambda x: x.split(), documents))))
+    avg_doc_length = sum(doc_lengths) / len(doc_lengths)
+    return avg_doc_length
+
+
 def main():
+    global documents
     # Reading the corpus file specified in command line
     with open(sys.argv[1], 'r') as text:
         input_string = text.read()
@@ -107,6 +204,8 @@ def main():
 
     # Splitting the corpus into documents and separating the terms
     documents = separate_terms_in_documents(input_string)
+
+    avg_doc_length = get_average_doc_length(documents)
 
     # Reading the positive query from command line
     query = normalize_query(sys.argv[3])
@@ -118,9 +217,34 @@ def main():
 
     # Displaying the top k solutions
     k = int(sys.argv[2])
+    #
+    # print(inverted_index)
+    # print(query)
 
-    print(inverted_index)
-    print(query)
+    # Heap for storing the top k results
+    results = []
+    for i in range(k):
+        results_data = {"docid": 0, "score": 0}
+        results.append(results_data)
+    print(results)
+
+    # Heap for storing query terms
+    terms = []
+    for i in range(len(query)):
+        terms_data = {"term": query[i], "nextDoc": next_doc(query[i], NEGATIVE_INFINITY)}
+        terms.append(terms_data)
+    print(terms)
+
+    # Establishing heap property for terms
+    terms = sorted(terms, key=lambda term: term["nextDoc"])
+    print(terms)
+
+    while terms[0]["nextDoc"] < POSITIVE_INFINITY:
+        d = terms[0]["nextDoc"]
+        score = 0
+        while terms[0]["nextDoc"] == d:
+            t = terms[0]["term"]
+            score = score + get_idf(t) * get_tf_bm25(t, d, avg_doc_length)
 
 
 if __name__ == '__main__':
