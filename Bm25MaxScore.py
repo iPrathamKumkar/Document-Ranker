@@ -215,6 +215,7 @@ def generate_max_scores(query):
 def rank_bm25(avg_doc_length, k, query):
     max_score = generate_max_scores(query)
     print(max_score)
+    deleted_terms = []
     # Heap for storing the top k results
     results = []
     for i in range(k):
@@ -230,6 +231,7 @@ def rank_bm25(avg_doc_length, k, query):
     print(terms)
     while terms[0]["nextDoc"] < POSITIVE_INFINITY:
         if results[0]["score"] > max_score[0][1]:
+            deleted_terms.append(max_score[0][0])
             terms = list(filter(lambda x: x["term"] != max_score[0][0], terms))
             del max_score[0]
             terms = heapify_terms(terms)
@@ -238,6 +240,9 @@ def rank_bm25(avg_doc_length, k, query):
         while terms[0]["nextDoc"] == d:
             t = terms[0]["term"]
             score = score + get_idf(t) * get_tf_bm25(d, t, avg_doc_length)
+            for term in deleted_terms:
+                if next_doc(term, d-1) == d:
+                    score = score + get_idf(term) * get_tf_bm25(d, term, avg_doc_length)
             terms[0]["nextDoc"] = next_doc(t, d)
             terms = heapify_terms(terms)
         if score > results[0]["score"]:
