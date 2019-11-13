@@ -439,7 +439,7 @@ def main():
         results = {}
     display_results(k, results)
     time_end = time.time()
-    print(str((time_end - time_start) * 1000))
+    print(str(time_end - time_start))
 
 if __name__ == '__main__':
     main()

@@ -2,13 +2,13 @@ import math
 import operator
 import string
 import sys
-
-# Defining constants to denote the start and end of corpus
 import time
 
+# Defining constants to denote the start and end of corpus
 POSITIVE_INFINITY = sys.maxsize
 NEGATIVE_INFINITY = -POSITIVE_INFINITY - 1
 
+# Defining constants for bm25 computation
 k1 = 1.2
 b = 0.75
 
@@ -21,13 +21,11 @@ posting_list = {}
 # Cache used in galloping search for next position
 cache_next_pos = {}
 
-# Cache used in galloping search for previous position
-cache_prev_pos = {}
-
 # Stores the starting and ending position for each document
 doc_first_last = {}
 
 
+# Utility method to separate the terms in a document
 def separate_terms_in_documents(input_string):
     docs = input_string.split('\n\n')
     for i in range(len(docs)):
@@ -172,23 +170,27 @@ def next_doc(term, current_doc):
     return (doc_num)
 
 
+# Computes the inverse document frequency for a given term
 def get_idf(term):
     return float(math.log(len(documents) / inverted_index[term][-1], 2))
 
 
+# Computes the length of the given document
 def doc_length(doc_id):
     return len(documents[doc_id - 1].split())
 
 
+# Computes the term frequency for a given term
 def get_tf_bm25(doc_id, term, avg_doc_length):
     for pair in inverted_index[term][:-1]:
         # If the term is present in the given document
         if pair[0] == doc_id:
-            (pair[1] * (k1 + 1)) / (pair[1] + k1 * ((1 - b) + b * doc_length(doc_id) / avg_doc_length))
-            return float(1 + math.log(pair[1], 2))
+            tf = (pair[1] * (k1 + 1)) / (pair[1] + k1 * ((1 - b) + b * doc_length(doc_id) / avg_doc_length))
+            return tf
     return 0.0
 
 
+# Computes the average length of the documents in the corpus
 def get_average_doc_length(documents):
     # doc_terms = documents.split();
     doc_lengths = list(map(lambda x: len(x), list(map(lambda x: x.split(), documents))))
@@ -196,25 +198,33 @@ def get_average_doc_length(documents):
     return avg_doc_length
 
 
+# Function to heapify the terms
 def heapify_terms(terms):
     terms = sorted(terms, key=lambda term: term["nextDoc"])
     return terms
 
 
+# Function to heapify the results
 def heapify_results(results):
     results = sorted(results, key=lambda result: result["score"])
     return results
 
 
+# Utility method to compute MaxScores for the query terms
 def generate_max_scores(query):
     max_score = {}
     for term in query:
-        max_score[term] = 2.2 * get_idf(term)
+        if term in inverted_index.keys():
+            max_score[term] = 2.2 * get_idf(term)
+        else:
+            max_score[term] = 0
     max_score = sorted(max_score.items(), key=operator.itemgetter(1))
     return max_score
 
 
+# Function to rank the documents and return the top k results
 def rank_bm25(avg_doc_length, k, query):
+    # Generating the MaxScores for the query terms
     max_score = generate_max_scores(query)
     deleted_terms = []
     # Heap for storing the top k results
@@ -256,11 +266,13 @@ def rank_bm25(avg_doc_length, k, query):
     return results
 
 
+# Utility method to print the results as a trec_top file
 def display_trec_top(results, query):
+    # Generating a unique queryID for each unique query
     query_hash = abs(hash(query)) % (10 ** 8)
     for i in range(len(results)):
         print(str(query_hash) + " 0 " + str(results[i]["docid"]) + " " + str(i + 1) + " " + str(
-            results[i]["score"]) + " run")
+            results[i]["score"]) + " run1")
 
 
 def main():
@@ -285,15 +297,13 @@ def main():
     # Creating an inverted index
     inverted_index = create_index(documents)
 
-    # Displaying the top k solutions
+    # Determining the top k results and displaying them
     k = int(sys.argv[2])
-
     time_start = time.time()
     results = rank_bm25(avg_doc_length, k, query)
     time_end = time.time()
-
     display_trec_top(results, query_arg)
-    print(str((time_end - time_start) * 1000))
+    print(str(time_end - time_start))
 
 
 if __name__ == '__main__':
