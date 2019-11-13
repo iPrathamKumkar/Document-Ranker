@@ -214,7 +214,6 @@ def generate_max_scores(query):
 
 def rank_bm25(avg_doc_length, k, query):
     max_score = generate_max_scores(query)
-    print(max_score)
     deleted_terms = []
     # Heap for storing the top k results
     results = []
@@ -228,20 +227,23 @@ def rank_bm25(avg_doc_length, k, query):
         terms.append(terms_data)
     # Establishing heap property for terms
     terms = heapify_terms(terms)
-    print(terms)
     while terms[0]["nextDoc"] < POSITIVE_INFINITY:
+        print(results[0]["score"], max_score[0][1])
         if results[0]["score"] > max_score[0][1]:
             deleted_terms.append(max_score[0][0])
             terms = list(filter(lambda x: x["term"] != max_score[0][0], terms))
             del max_score[0]
             terms = heapify_terms(terms)
+        print(terms)
+        if not terms:
+            break
         d = terms[0]["nextDoc"]
         score = 0
         while terms[0]["nextDoc"] == d:
             t = terms[0]["term"]
             score = score + get_idf(t) * get_tf_bm25(d, t, avg_doc_length)
             for term in deleted_terms:
-                if next_doc(term, d-1) == d:
+                if next_doc(term, d - 1) == d:
                     score = score + get_idf(term) * get_tf_bm25(d, term, avg_doc_length)
             terms[0]["nextDoc"] = next_doc(t, d)
             terms = heapify_terms(terms)
@@ -249,7 +251,15 @@ def rank_bm25(avg_doc_length, k, query):
             results[0]["docid"] = d
             results[0]["score"] = score
             results = heapify_results(results)
+    results = list(filter(lambda x: x["score"] != 0, results))
+    results = sorted(results, key=lambda result: result["score"], reverse=True)
     return results
+
+
+def display_trec_top(results, query):
+    query_hash = abs(hash(query)) % (10 ** 8)
+    for i in range(len(results)):
+        print(str(query_hash) + " 0 " + str(results[i]["docid"]) + " " + str(i + 1) + " " + str(results[i]["score"]) + " run")
 
 
 def main():
@@ -268,16 +278,17 @@ def main():
     avg_doc_length = get_average_doc_length(documents)
 
     # Reading the positive query from command line
-    query = normalize_query(sys.argv[3])
+    query_arg = sys.argv[3]
+    query = normalize_query(query_arg)
 
     # Creating an inverted index
     inverted_index = create_index(documents)
 
-
     # Displaying the top k solutions
     k = int(sys.argv[2])
     results = rank_bm25(avg_doc_length, k, query)
-    print(results)
+
+    display_trec_top(results, query_arg);
 
 
 if __name__ == '__main__':

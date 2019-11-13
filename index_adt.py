@@ -389,7 +389,7 @@ def separate_terms_in_documents(input_string):
     docs = input_string.split('\n\n')
     for i in range(len(docs)):
         docs[i] = docs[i].replace('\n', ' ')
-        return docs
+    return docs
 
 # Converts query terms to lower case
 def normalize_query(query):
