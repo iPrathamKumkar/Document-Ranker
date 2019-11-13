@@ -2,6 +2,7 @@
 import sys
 import string
 import math
+import time
 from functools import reduce
 
 # Defining constants to denote the start and end of corpus
@@ -425,6 +426,7 @@ def main():
     # Creating an inverted index
     create_index()
 
+    time_start = time.time()
     # Generating a set of documents satisfying the given query
     valid_docs = candidate_solutions(query)
 
@@ -436,7 +438,8 @@ def main():
     else:
         results = {}
     display_results(k, results)
-
+    time_end = time.time()
+    print(str((time_end - time_start) * 1000))
 
 if __name__ == '__main__':
     main()

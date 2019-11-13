@@ -4,6 +4,8 @@ import string
 import sys
 
 # Defining constants to denote the start and end of corpus
+import time
+
 POSITIVE_INFINITY = sys.maxsize
 NEGATIVE_INFINITY = -POSITIVE_INFINITY - 1
 
@@ -228,13 +230,11 @@ def rank_bm25(avg_doc_length, k, query):
     # Establishing heap property for terms
     terms = heapify_terms(terms)
     while terms[0]["nextDoc"] < POSITIVE_INFINITY:
-        print(results[0]["score"], max_score[0][1])
         if results[0]["score"] > max_score[0][1]:
             deleted_terms.append(max_score[0][0])
             terms = list(filter(lambda x: x["term"] != max_score[0][0], terms))
             del max_score[0]
             terms = heapify_terms(terms)
-        print(terms)
         if not terms:
             break
         d = terms[0]["nextDoc"]
@@ -259,7 +259,8 @@ def rank_bm25(avg_doc_length, k, query):
 def display_trec_top(results, query):
     query_hash = abs(hash(query)) % (10 ** 8)
     for i in range(len(results)):
-        print(str(query_hash) + " 0 " + str(results[i]["docid"]) + " " + str(i + 1) + " " + str(results[i]["score"]) + " run")
+        print(str(query_hash) + " 0 " + str(results[i]["docid"]) + " " + str(i + 1) + " " + str(
+            results[i]["score"]) + " run")
 
 
 def main():
@@ -286,9 +287,13 @@ def main():
 
     # Displaying the top k solutions
     k = int(sys.argv[2])
-    results = rank_bm25(avg_doc_length, k, query)
 
-    display_trec_top(results, query_arg);
+    time_start = time.time()
+    results = rank_bm25(avg_doc_length, k, query)
+    time_end = time.time()
+
+    display_trec_top(results, query_arg)
+    print(str((time_end - time_start) * 1000))
 
 
 if __name__ == '__main__':
